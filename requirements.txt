@@ -1,4 +1,5 @@
 pyts
 mne
 dtcwt
-tensorflow
+tensorflow-cpu
+numpy
