@@ -9,18 +9,28 @@ from pathlib import Path
 from tqdm import tqdm
 
 def trial_to_gaf(X, image_size):
-    transformer_sum = GramianAngularField(image_size, method='summation')
-    transformer_dif = GramianAngularField(image_size, method='difference')
+    trans_s = GramianAngularField(method = 'summation')
+    trans_d = GramianAngularField(method = 'summation')
     # transform each trial into a GAF
-    X_gasf = transformer_sum.fit_transform(X)
-    X_gadf = transformer_dif.fit_transform(X)
-    X_gaf = np.stack((X_gasf, X_gadf, np.zeros(X_gadf.shape)), axis=3)
+    X_gaf_s = trans_s.fit_transform(X)
+    X_gaf_d = trans_d.fit_transform(X)
 
-    return X_gaf
+    # loop over gafs per channel 
+    for i in range(X_gaf_s.shape[0]):
+        gaf = np.concatenate([X_gaf_s[i], X_gaf_d[i], np.zeros((50, 50))])
+        gaf = np.reshape(gaf, (50,50,1,3))
 
-def gaf_subject(sub_path, out_path, image_size):
+        if i == 0:
+            im = gaf
 
-    timeseries = sub_path.glob('*timeseries*')
+        else:
+            im = np.concatenate((im, gaf), axis = 2)
+
+    return im
+
+def gaf_subject(subpath, outpath, image_size):
+
+    timeseries = subpath.glob('*timeseries*')
 
     for i, ts in enumerate(timeseries):
         timeseries_path = sub_path / ts
@@ -34,7 +44,6 @@ def gaf_subject(sub_path, out_path, image_size):
 
         # loop over all trials
         for j in range(X.shape[0]):
-
             # for now only include 2000 first per participant
             if j < 2000:
                 gaf = trial_to_gaf(X[j], image_size)
@@ -54,14 +63,14 @@ def main():
     # loop over subjects
     subjects = [x for x in data_path.iterdir() if x.is_dir()]
 
-    for subject in subjects:
-        out_path = path.parents[1] / 'data' / 'gaf' / subject.name
+    for subject in tqdm(subjects):
+        outpath = path.parents[1] / 'data' / 'gaf' / subject.name
 
         # create directory
-        if not out_path.exists():
-            out_path.mkdir(parents=True)
+        if not outpath.exists():
+            outpath.mkdir(parents=True)
 
-        gaf_subject(subject, out_path, image_size)
+        gaf_subject(subject, outpath, image_size)
 
 
 if __name__ == '__main__':
