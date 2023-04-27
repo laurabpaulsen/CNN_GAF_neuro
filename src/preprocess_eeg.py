@@ -1,3 +1,7 @@
+"""
+NOTES: Only one file we are interested in per subject.... maybe change preprocess subject????
+"""
+
 import mne
 from mne.datasets import sample
 from pathlib import Path
@@ -5,21 +9,23 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+
 def get_data(eeg_path, event_path):
     raw = mne.io.read_raw_brainvision(eeg_path, preload=True, verbose=False)
-    event_df =  pd.read_csv(event_path, sep = '\t', usecols=['stimulusnumber', 'stimulusname', 'onset', 'levelA', 'levelB', 'levelC'])
-    
-    event_df['event_ids'] = event_df['levelA'] + '/'+ event_df['levelB'] + '/'+ event_df['levelC']
-    
-    # create dictionary with
-    event_id = dict(zip(event_df.stimulusnumber, event_df.event_ids))
+    event_df =  pd.read_csv(event_path, sep = '\t', usecols=['stimulusnumber', 'onset', 'levelB'])
+
+    # mapping between the second level label and the assigned event id
+    event_id = return_eventids()
 
     events = []
     for index, row in event_df.iterrows():
-        new_event = [row.onset, 0, row.stimulusnumber]
+        new_event = [row.onset, 0, event_id[row.levelB]]
         events.append(new_event)
 
     return raw, events
+
+def return_eventids():
+    return {'clothing': 0, 'fruits': 1, 'plants': 2, 'mammal': 3, 'human': 4, 'furniture': 5, 'aquatic':6, 'insect': 7, 'tools': 8, 'bird': 9, 'shapes': 10, 'object':11}
 
 def preprocess_meg(raw, events):
     picks = mne.pick_types(raw.info, meg=False, eeg=True, eog=False, stim=False, exclude='bads')
@@ -39,7 +45,7 @@ def preprocess_meg(raw, events):
 def preprocess_subject(sub_path, out_path):
 
     # list all vhdr_files per in subject path
-    p = sub_path.glob('**/*.vhdr')
+    p = sub_path.glob('**/*run-01_eeg.vhdr')
     vhdr_files = [x for x in p if x.is_file()]
 
     # get the tsv file with event information
@@ -75,7 +81,7 @@ def main():
 
             # create directory
             if not out_path.exists():
-                out_path.mkdir()
+                out_path.mkdir(parents = True)
 
             preprocess_subject(subject, out_path=out_path)
 
