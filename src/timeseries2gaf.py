@@ -7,8 +7,9 @@ import numpy as np
 from pyts.image import GramianAngularField
 from pathlib import Path
 from tqdm import tqdm
+import pandas as pd
 
-def trial_to_gaf(X, image_size):
+def trial_to_gaf(X:np.ndarray):
     trans_s = GramianAngularField(method = 'summation')
     trans_d = GramianAngularField(method = 'summation')
     # transform each trial into a GAF
@@ -28,29 +29,37 @@ def trial_to_gaf(X, image_size):
 
     return im
 
-def gaf_subject(subpath, outpath, image_size):
+def gaf_subject(subject:str, outpath:Path, label:str):
+    """
+    Converts the timeseries data into Gramian Angular Fields (GAFs) and maps them onto a image with 3 channels.
 
-    timeseries = subpath.glob('*timeseries*')
+    Parameters
+    ----------
+    subject : str
+        Subject ID.
+    outpath : Path
+        Path to save the GAFs.
+    label : str
+        Label of the subject (i.e., 'AD', 'FD', or 'Control').
 
-    for i, ts in enumerate(timeseries):
-        timeseries_path = sub_path / ts
+    Returns
+    -------
+    im : np.ndarray
+        GAFs of all trials of a subject.
+    """
+    path = Path(__file__).parents[1]
+    ts_path  = path / 'data' / 'preprocessed' / f'{subject}_timeseries.npy'
 
-        file_name_label = 'labels' + str(ts).split("timeseries")[-1]
-        labels_path = sub_path / file_name_label
-        
-        # loading in timeseries and labels
-        X = np.load(timeseries_path)
-        y = np.load(labels_path)
+    # loading in timeseries and labels
+    X = np.load(ts_path)
 
-        # loop over all trials
-        for j in range(X.shape[0]):
-            # for now only include 2000 first per participant
-            if j < 2000:
-                gaf = trial_to_gaf(X[j], image_size)
+    # loop over all trials
+    for i in range(X.shape[0]):
+        gaf = trial_to_gaf(X[i])
 
-                # save each trial as a separate numpy array
-                tmp_path = out_path / f'run_{1+i}_trial_{j}_label_{y[j]}.npy'
-                np.save(tmp_path, gaf)
+        # save each trial as a separate numpy array
+        tmp_path = outpath / f'{subject}_{i}_{label}.npy'
+        np.save(tmp_path, gaf)
 
 
 def main():
@@ -60,17 +69,23 @@ def main():
 
     data_path = path.parents[1] / 'data' / 'preprocessed'
 
+    # load tsv file with diagnosis information
+    tsv_path = path.parents[1] / 'data' / 'participants.tsv'
+    df_diag = pd.read_csv(tsv_path, sep='\t', usecols=['participant_id', 'Group'])
+
     # loop over subjects
     subjects = [x for x in data_path.iterdir() if x.is_dir()]
 
     for subject in tqdm(subjects):
         outpath = path.parents[1] / 'data' / 'gaf' / subject.name
 
+        # get label
+        label = df_diag.loc[df_diag['participant_id'] == subject.name, 'Group'].iloc[0]
         # create directory
         if not outpath.exists():
             outpath.mkdir(parents=True)
 
-        gaf_subject(subject, outpath, image_size)
+        gaf_subject(subject, outpath, label=label)
 
 
 if __name__ == '__main__':
