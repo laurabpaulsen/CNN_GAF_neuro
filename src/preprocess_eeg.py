@@ -33,16 +33,16 @@ def preprocess_eeg(raw):
         Preprocessed epoched EEG data. 
     """
     
-    picks = mne.pick_types(raw.info, meg=False, eeg=True, eog=False, stim=False, exclude='bads')
+    picks = mne.pick_types(raw.info, meg=False, eeg=True, eog=False, stim=False)
 
     # filter raw data
     raw.filter(l_freq = 1, h_freq = 40, verbose=False)
 
     # split into epochs of 10 seconds
-    events = mne.make_fixed_length_events(raw, duration=10.0, overlap=0.0)
+    events = mne.make_fixed_length_events(raw, duration=5.0, overlap=0.0)
 
     # epoch data
-    epochs = mne.Epochs(raw, events, tmin=0, tmax=10, proj=True, picks=picks, baseline=None, preload=True, verbose=False)
+    epochs = mne.Epochs(raw, events, tmin=0, tmax=5, reject={'eeg': 150e-6},  proj=True, picks=picks, baseline=None, preload=True, verbose=False)
 
     # resample epochs
     epochs.resample(200)
