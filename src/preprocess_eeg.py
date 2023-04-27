@@ -3,68 +3,74 @@ NOTES: Only one file we are interested in per subject.... maybe change preproces
 """
 
 import mne
-from mne.datasets import sample
 from pathlib import Path
 import numpy as np
-import pandas as pd
 from tqdm import tqdm
 
 
-def get_data(eeg_path, event_path):
-    raw = mne.io.read_raw_brainvision(eeg_path, preload=True, verbose=False)
-    event_df =  pd.read_csv(event_path, sep = '\t', usecols=['stimulusnumber', 'onset', 'levelB'])
+def get_data(eeg_path):
+    # read .set files
+    raw = mne.io.read_raw_eeglab(eeg_path, preload=True, verbose=False)
 
-    # mapping between the second level label and the assigned event id
-    event_id = return_eventids()
+    return raw
 
-    events = []
-    for index, row in event_df.iterrows():
-        new_event = [row.onset, 0, event_id[row.levelB]]
-        events.append(new_event)
+def preprocess_eeg(raw):
+    """
+    Performs the following preprocessing steps on the raw EEG data.
+    - Filters the data between 1 and 40 Hz.
+    - Splits the data into epochs of 10 seconds.
+    - Resamples the data to 200 Hz.
 
-    return raw, events
 
-def return_eventids():
-    return {'clothing': 0, 'fruits': 1, 'plants': 2, 'mammal': 3, 'human': 4, 'furniture': 5, 'aquatic':6, 'insect': 7, 'tools': 8, 'bird': 9, 'shapes': 10, 'object':11}
-
-def preprocess_meg(raw, events):
+    Parameters
+    ----------
+    raw : mne.io.Raw
+        Raw EEG data.
+    
+    Returns
+    -------
+    epochs : mne.Epochs
+        Preprocessed epoched EEG data. 
+    """
+    
     picks = mne.pick_types(raw.info, meg=False, eeg=True, eog=False, stim=False, exclude='bads')
 
     # filter raw data
     raw.filter(l_freq = 1, h_freq = 40, verbose=False)
 
+    # split into epochs of 10 seconds
+    events = mne.make_fixed_length_events(raw, duration=10.0, overlap=0.0, verbose=False)
+
     # epoch data
-    epochs = mne.Epochs(raw, events, tmin=0, tmax=0.2, proj=True, picks=picks, baseline=None, preload=True, verbose=False)
+    epochs = mne.Epochs(raw, events, tmin=0, tmax=10, proj=True, picks=picks, baseline=None, preload=True, verbose=False)
 
     # resample epochs
-    epochs.resample(250)
+    epochs.resample(200)
 
     return epochs
 
 
-def preprocess_subject(sub_path, out_path):
+def preprocess_subject(subject:str, outpath:Path):
+    """
+    Preprocesses the data of a single subject and saves it as a numpy array.
 
-    # list all vhdr_files per in subject path
-    p = sub_path.glob('**/*run-01_eeg.vhdr')
-    vhdr_files = [x for x in p if x.is_file()]
+    Parameters
+    ----------
+    subject : str
+        Subject ID.
+    outpath : Path
+        Path to save the preprocessed data.
+    """
+    eeg_path = Path(f"data/{subject}/eeg/{subject}_task-eyesclosed_eeg.set")
+    X_path = outpath / f'{subject}_timeseries.npy'
 
-    # get the tsv file with event information
-    event_path = [str(x).split('_eeg.vhdr')[0]+'_events.tsv' for x in vhdr_files]
+    # get data
+    raw = get_data(eeg_path)
+    epochs = preprocess_eeg(raw)
 
-    for i, (eeg_path, event_path) in enumerate(zip(vhdr_files, event_path)):
-        X_path = out_path / f'timeseries_run_{i+1}.npy'
-        y_path = out_path / f'labels_run_{i+1}.npy'
-        
-        raw, events = get_data(eeg_path, event_path)
-
-        epochs = preprocess_meg(raw, events)
-
-        # save epochs as numpy array
-        X = epochs.get_data()
-        y = epochs.events[:, -1]
-
-        np.save(X_path, X)
-        np.save(y_path, y)
+    # save epochs as numpy array
+    X = epochs.get_data()
+    np.save(X_path, X)
 
 
 def main():
@@ -76,14 +82,14 @@ def main():
     subjects = [x for x in bids_path.iterdir() if x.is_dir()]
 
     for subject in tqdm(subjects):
-        if subject.name != "stimuli":
-            out_path = path.parents[1] / 'data' / 'preprocessed' / subject.name
+        if subject.name.startswith('sub-'):
+            outpath = path.parents[1] / 'data' / 'preprocessed'
 
             # create directory
-            if not out_path.exists():
-                out_path.mkdir(parents = True)
+            if not outpath.exists():
+                outpath.mkdir(parents = True)
 
-            preprocess_subject(subject, out_path=out_path)
+            preprocess_subject(subject.name, outpath = outpath)
 
 
 if __name__ == '__main__':
