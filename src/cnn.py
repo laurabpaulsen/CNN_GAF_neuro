@@ -49,6 +49,13 @@ def prep_model():
                     input_shape = (38, 38, 19, 3)))
     
     model.add(Activation("relu"))
+
+    # Define CONV => ReLU
+    model.add(Conv3D(32, 
+                    kernel_size = 3,
+                    padding = "same"))
+    
+    model.add(Activation("relu"))
             
     # FC classifier
     model.add(Flatten())
@@ -131,23 +138,21 @@ def plot_history(history, save_path:Path=None):
     
     return fig, axes
 
-def balance_class_weights(X, y, verbose = True):
+def balance_classes(X, y):
     """
-    Balances the class weight by removing trials from the class with the most trials.
+    Balances the class weight by removing trials from classes with more trials
 
     Parameters
     ----------
     X : array
-        Data array.
+        Data array with n_trials as the first dimension
     y : array
         Array with shape (n_trials, )
-    verbose : bool, optional
-        Print statements. The default is True.
     
     Returns
     -------
     X_equal : array
-        Data array with shape (n_channels, n_trials, n_times) with equal number of trials for each class
+        Data array with a equal number of trials for each class
     y_equal : array
         Array with shape (n_trials, ) containing classes with equal number of trials for each class
     """
@@ -158,18 +163,14 @@ def balance_class_weights(X, y, verbose = True):
 
     # loop through each class and remove trials
     remove_ind = []
-    for key in keys:
+    for key, count in zip(keys, counts):
         index = np.where(np.array(y) == key)
-        random_choices = np.random.choice(len(index[0]), size = counts[key]-min_count, replace=False)
+        random_choices = np.random.choice(len(index[0]), size = count-min_count, replace=False)
         remove_ind.extend([index[0][i] for i in random_choices])
     
-    X_equal = np.delete(X, remove_ind, axis = 1)
+    X_equal = np.delete(X, remove_ind, axis = 0)
     y_equal = np.delete(y, remove_ind, axis = 0)
 
-    if verbose:
-        print(f'Removed a total of {len(remove_ind)} trials')
-        print(f'{len(y_equal)} remains')
-    
     return X_equal, y_equal
 
 def main():
@@ -177,9 +178,11 @@ def main():
     gaf_path = path.parent.parent / 'data' / 'gaf'
     gafs, labels = load_gafs(gaf_path)
 
+    X, y = balance_classes(gafs, labels)
+
     # train test split 
-    ## HUSK AT TJEKKE AT TRAIN TEST SPLIT ER DÅ DEN RIGTIGE DIMENSION <33
     X_train, X_test, y_train, y_test = train_test_split(gafs, labels, test_size=0.2, random_state=42)
+    
     # convert labels from integers to vectors
     lb = LabelBinarizer()
     y_train = lb.fit_transform(y_train)
@@ -192,7 +195,7 @@ def main():
     model, history = train_model(model, X_train, y_train)
 
     # evaluate model
-    clf_report = test_model(model, X_test, y_test, label_names=["A", "D", "C"])
+    clf_report = test_model(model, X_test, y_test, label_names=["A", "C", "F"])
 
     report_path = path.parents[1] / 'mdl' / 'cnn.txt'
 
