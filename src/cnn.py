@@ -152,15 +152,17 @@ def balance_class_weights(X, y, verbose = True):
         Array with shape (n_trials, ) containing classes with equal number of trials for each class
     """
     keys, counts = np.unique(y, return_counts = True)
-    if counts[0]-counts[1] > 0:
-        index_inanimate = np.where(np.array(y) == 0)
-        random_choices = np.random.choice(len(index_inanimate[0]), size = counts[0]-counts[1], replace=False)
-        remove_ind = [index_inanimate[0][i] for i in random_choices]
-    else:
-        index_animate = np.where(np.array(y) == 1)
-        random_choices = np.random.choice(len(index_animate[0]), size = counts[1]-counts[0], replace=False)
-        remove_ind = [index_animate[0][i] for i in random_choices]
 
+    # get the minimum number of trials
+    min_count = np.min(counts)
+
+    # loop through each class and remove trials
+    remove_ind = []
+    for key in keys:
+        index = np.where(np.array(y) == key)
+        random_choices = np.random.choice(len(index[0]), size = counts[key]-min_count, replace=False)
+        remove_ind.extend([index[0][i] for i in random_choices])
+    
     X_equal = np.delete(X, remove_ind, axis = 1)
     y_equal = np.delete(y, remove_ind, axis = 0)
 
