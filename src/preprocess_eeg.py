@@ -77,13 +77,13 @@ def main():
     path = Path(__file__)
 
     bids_path = path.parents[1] / 'data' / 'raw'
+    outpath = path.parents[1] / 'data' / 'preprocessed'
 
     # loop over subjects
     subjects = [x for x in bids_path.iterdir() if x.is_dir()]
 
     for subject in tqdm(subjects):
         if subject.name.startswith('sub-'):
-            outpath = path.parents[1] / 'data' / 'preprocessed'
 
             # create directory
             if not outpath.exists():
