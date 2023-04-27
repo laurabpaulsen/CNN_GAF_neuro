@@ -39,7 +39,7 @@ def preprocess_eeg(raw):
     raw.filter(l_freq = 1, h_freq = 40, verbose=False)
 
     # split into epochs of 10 seconds
-    events = mne.make_fixed_length_events(raw, duration=10.0, overlap=0.0, verbose=False)
+    events = mne.make_fixed_length_events(raw, duration=10.0, overlap=0.0)
 
     # epoch data
     epochs = mne.Epochs(raw, events, tmin=0, tmax=10, proj=True, picks=picks, baseline=None, preload=True, verbose=False)
