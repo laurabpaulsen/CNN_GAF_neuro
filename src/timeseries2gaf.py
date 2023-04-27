@@ -9,17 +9,17 @@ from pathlib import Path
 from tqdm import tqdm
 import pandas as pd
 
-def trial_to_gaf(X:np.ndarray):
-    trans_s = GramianAngularField(method = 'summation')
-    trans_d = GramianAngularField(method = 'summation')
+def trial_to_gaf(X:np.ndarray, image_size = 38):
+    trans_s = GramianAngularField(method = 'summation', image_size=image_size)
+    trans_d = GramianAngularField(method = 'difference', image_size=image_size)
     # transform each trial into a GAF
     X_gaf_s = trans_s.fit_transform(X)
     X_gaf_d = trans_d.fit_transform(X)
 
     # loop over gafs per channel 
     for i in range(X_gaf_s.shape[0]):
-        gaf = np.concatenate([X_gaf_s[i], X_gaf_d[i], np.zeros((50, 50))])
-        gaf = np.reshape(gaf, (50,50,1,3))
+        gaf = np.concatenate([X_gaf_s[i], X_gaf_d[i], np.zeros((image_size, image_size))])
+        gaf = np.reshape(gaf, (image_size, image_size, 1, 3))
 
         if i == 0:
             im = gaf
@@ -63,29 +63,26 @@ def gaf_subject(subject:str, outpath:Path, label:str):
 
 
 def main():
-    path = Path(__file__)
-    
-    image_size = 26
-
-    data_path = path.parents[1] / 'data' / 'preprocessed'
+    path = Path(__file__).parents[1]
+    raw_path = path / 'data' /'raw'
+    outpath = path / 'data' / 'gaf'
 
     # load tsv file with diagnosis information
-    tsv_path = path.parents[1] / 'data' / 'participants.tsv'
-    df_diag = pd.read_csv(tsv_path, sep='\t', usecols=['participant_id', 'Group'])
+    df_diag = pd.read_csv(raw_path / 'participants.tsv' , sep='\t', usecols=['participant_id', 'Group'])
 
     # loop over subjects
-    subjects = [x for x in data_path.iterdir() if x.is_dir()]
+    subjects = [x.name for x in raw_path.iterdir() if x.is_dir()]
 
     for subject in tqdm(subjects):
-        outpath = path.parents[1] / 'data' / 'gaf' / subject.name
+        if subject.startswith("sub-"):
+            # get label
+            label = df_diag[df_diag['participant_id'] == subject]['Group'].iloc[0]
+            
+            # create directory
+            if not outpath.exists():
+                outpath.mkdir()
 
-        # get label
-        label = df_diag.loc[df_diag['participant_id'] == subject.name, 'Group'].iloc[0]
-        # create directory
-        if not outpath.exists():
-            outpath.mkdir(parents=True)
-
-        gaf_subject(subject, outpath, label=label)
+            gaf_subject(subject, outpath, label=label)
 
 
 if __name__ == '__main__':
