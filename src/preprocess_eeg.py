@@ -61,7 +61,7 @@ def preprocess_subject(subject:str, outpath:Path):
     outpath : Path
         Path to save the preprocessed data.
     """
-    eeg_path = Path(f"data/{subject}/eeg/{subject}_task-eyesclosed_eeg.set")
+    eeg_path = Path(f"data/raw/{subject}/eeg/{subject}_task-eyesclosed_eeg.set")
     X_path = outpath / f'{subject}_timeseries.npy'
 
     # get data
@@ -80,16 +80,16 @@ def main():
     outpath = path.parents[1] / 'data' / 'preprocessed'
 
     # loop over subjects
-    subjects = [x for x in bids_path.iterdir() if x.is_dir()]
+    subjects = [x.name for x in bids_path.iterdir() if x.is_dir()]
 
     for subject in tqdm(subjects):
-        if subject.name.startswith('sub-'):
+        if subject.startswith('sub-'):
 
             # create directory
             if not outpath.exists():
                 outpath.mkdir(parents = True)
 
-            preprocess_subject(subject.name, outpath = outpath)
+            preprocess_subject(subject, outpath = outpath)
 
 
 if __name__ == '__main__':
