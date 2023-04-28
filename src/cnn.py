@@ -32,7 +32,7 @@ def load_gafs(gaf_path):
             label = str(file).split('.npy')[0]
             label = label.split('_')[-1]
             labels.append(label)
-
+   
     gafs = np.array(gafs)
     labels = np.array(labels)
     
@@ -46,17 +46,19 @@ def prep_model():
     model.add(Conv3D(32, 
                     kernel_size = 6,
                     padding = "same",
-                    input_shape = (38, 38, 19, 3)))
+                    input_shape = (38, 38, 19, 3),
+                    kernel_regularizer='l1'))
     
     model.add(Activation("relu"))
 
     # Define CONV => ReLU
-    model.add(Conv3D(32, 
+    """model.add(Conv3D(32, 
                     kernel_size = 3,
-                    padding = "same"))
+                    padding = "same", 
+                    kernel_regularizer='l1'))
     
     model.add(Activation("relu"))
-            
+    """
     # FC classifier
     model.add(Flatten())
     model.add(Dense(100))
@@ -74,7 +76,6 @@ def prep_model():
     return model
 
 def train_model(model, X_train, y_train):
-    # train model
     history = model.fit(X_train, y_train,
                         validation_split = 0.2,
                         batch_size=64,
@@ -208,7 +209,6 @@ def main():
 
     # plot history
     plot_history(history, save_path =  path.parents[1] / 'mdl' / 'history.png')
-
 
 if __name__ == '__main__':
     main()
