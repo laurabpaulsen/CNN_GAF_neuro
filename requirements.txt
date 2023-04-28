@@ -3,3 +3,4 @@ mne
 dtcwt
 tensorflow-cpu
 numpy
+pandas
