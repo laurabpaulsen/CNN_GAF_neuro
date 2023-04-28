@@ -17,10 +17,10 @@ def get_data(eeg_path):
 def preprocess_eeg(raw):
     """
     Performs the following preprocessing steps on the raw EEG data.
+    - Set the reference to common average
     - Filters the data between 1 and 40 Hz.
     - Splits the data into epochs of 10 seconds.
     - Resamples the data to 200 Hz.
-
 
     Parameters
     ----------
@@ -34,6 +34,9 @@ def preprocess_eeg(raw):
     """
     
     picks = mne.pick_types(raw.info, meg=False, eeg=True, eog=False, stim=False)
+
+    # common average reference
+    raw = raw.set_eeg_reference(ref_channels='average')
 
     # filter raw data
     raw.filter(l_freq = 1, h_freq = 40, verbose=False)
