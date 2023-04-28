@@ -16,9 +16,10 @@ def trial_to_gaf(X:np.ndarray, image_size = 38):
     X_gaf_s = trans_s.fit_transform(X)
     X_gaf_d = trans_d.fit_transform(X)
 
+
     # loop over gafs per channel 
     for i in range(X_gaf_s.shape[0]):
-        gaf = np.concatenate([X_gaf_s[i], X_gaf_d[i], np.zeros((image_size, image_size))])
+        gaf = np.stack([X_gaf_s[i], X_gaf_d[i], np.zeros((image_size, image_size))], axis=-1)
         gaf = np.reshape(gaf, (image_size, image_size, 1, 3))
 
         if i == 0:
