@@ -9,6 +9,8 @@ from pathlib import Path
 from tqdm import tqdm
 import pandas as pd
 
+import multiprocessing as mp
+
 def trial_to_gaf(X:np.ndarray, image_size = 38):
     trans_s = GramianAngularField(method = 'summation', image_size=image_size)
     trans_d = GramianAngularField(method = 'difference', image_size=image_size)
@@ -75,18 +77,16 @@ def main():
 
     # loop over subjects
     subjects = [x.name for x in raw_path.iterdir() if x.is_dir()]
+    subjects = [subject for subject in subjects if subject.startswith("sub-")]
 
-    for subject in tqdm(subjects):
-        if subject.startswith("sub-"):
-            # get label
-            label = df_diag[df_diag['participant_id'] == subject]['Group'].iloc[0]
-            
-            # create directory
-            if not outpath.exists():
-                outpath.mkdir()
+    # check that outpath exists
+    # create directory
+    if not outpath.exists():
+        outpath.mkdir()
 
-            gaf_subject(subject, outpath, label=label)
-
+    # use multiprocessing to speed up the process
+    pool = mp.Pool(mp.cpu_count()-1)
+    pool.starmap(gaf_subject, [(subject, outpath, df_diag[df_diag['participant_id'] == subject]['Group'].iloc[0]) for subject in subjects])
 
 if __name__ == '__main__':
     main()
