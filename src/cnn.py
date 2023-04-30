@@ -179,10 +179,10 @@ def main():
     gaf_path = path.parent.parent / 'data' / 'gaf'
     gafs, labels = load_gafs(gaf_path)
 
-    X, y = balance_classes(gafs, labels)
+    gafs, labels = balance_classes(gafs, labels)
 
     # train test split 
-    X_train, X_test, y_train, y_test = train_test_split(gafs, labels, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(gafs, labels, test_size=0.2, stratify=labels, random_state=42)
     
     # convert labels from integers to vectors
     lb = LabelBinarizer()
