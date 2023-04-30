@@ -11,13 +11,15 @@ import multiprocessing as mp
 
 def get_data(eeg_path, event_path):
     raw = mne.io.read_raw_brainvision(eeg_path, preload=True, verbose=False)
-    event_df =  pd.read_csv(event_path, sep = '\t', usecols=['stimulusnumber', 'onset', 'LevelA'])
+    event_df =  pd.read_csv(event_path, sep = '\t', usecols=['stimulusnumber', 'onset', 'levelA'])
+    event_df = event_df[event_df["levelA"] != 'targets']
 
     # mapping between the second level label and the assigned event id
     event_id = return_eventids()
 
     events = []
     for _, row in event_df.iterrows():
+        #print(row.levelA)
         new_event = [row.onset, 0, event_id[row.levelA]]
         events.append(new_event)
 
@@ -69,13 +71,13 @@ def preprocess_subject(sub_path:Path):
 
     # create output directory if it does not exist
     if not out_path.exists():
-        out_path.mkdir()
+        out_path.mkdir(parents=True)
 
     # get path for the run_01_eeg.vhdr file
-    vhdr_path = sub_path / f'{sub_path.name}_task-rsvp_run-01_eeg.vhdr'
+    vhdr_path = sub_path / "eeg" / f"{sub_path.name}_task-rsvp_run-01_eeg.vhdr"
 
     # tsv file with event information
-    event_path = sub_path / f'{sub_path.name}_task-rsvp_run-01_events.tsv'
+    event_path = sub_path / "eeg" / f'{sub_path.name}_task-rsvp_run-01_events.tsv'
 
     X_path = out_path / f'X.npy'
     y_path = out_path / f'y.npy'
@@ -99,11 +101,11 @@ def main():
 
     # loop over subjects
     subjects = [x for x in bids_path.iterdir() if x.is_dir()]
-    subject = [subject for subject in subjects if subject.name != "stimuli"]
+    subjects = [subject for subject in subjects if subject.name.startswith("sub-")]
 
     # use multiprocessing to speed up the process
     pool = mp.Pool(mp.cpu_count()-1)
-    pool.map(preprocess_subject, subjects)
+    pool.imap(preprocess_subject, subjects)
 
 
 if __name__ == '__main__':
