@@ -13,9 +13,9 @@ def ax_plot_gaf(ax, gaf):
 def main_plotter(gaf_path: Path, save_path:Path = None):
     # load gaf
     gaf = np.load(gaf_path)
-    fig, axes = plt.subplots(3, 19, figsize = (20, 3))
+    fig, axes = plt.subplots(3, 15, figsize = (20, 3))
 
-    for i in range(19):
+    for i in range(15):
         tmp_gaf = gaf[:, :, i, :]
         ax_plot_gaf(axes[0, i], tmp_gaf[:, :, 0])
         ax_plot_gaf(axes[1, i], tmp_gaf[:, :, 1])
@@ -29,6 +29,6 @@ def main_plotter(gaf_path: Path, save_path:Path = None):
 if __name__ in "__main__":
     path = Path(__file__).parents[1]
 
-    gaf_path = path / "data" / "gaf" / "sub-001_9_A.npy"
-    plot_path = path / "data" / "gaf_sub-001_A.png"
+    gaf_path = path / "data" / "gaf" / "sub-01_0_0.npy"
+    plot_path = path / "data" / "gaf_sub-01_0_0.png"
     main_plotter(gaf_path, save_path=plot_path)
