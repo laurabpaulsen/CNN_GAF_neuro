@@ -1,5 +1,5 @@
 """
-    Converts the timeseries data into Gramian Angular Fields (GAFs) and maps them onto a image with 3 channels.
+    Converts the timeseries data into Gramian Angular Fields (both GAFD and GAFS), as well as Markov transition fields. For each timeseries a 3D array containing these are made. 
     The GAFs are saved as numpy arrays in the data/gaf folder.
 """
 
@@ -16,7 +16,7 @@ def trial_to_gaf(X:np.ndarray, image_size = 38):
     # transform each trial into a GAF
     X_gaf_s = trans_s.fit_transform(X)
     X_gaf_d = trans_d.fit_transform(X)
-    X_mtf = mtf.fit_transform(X)
+    X_mtf = trans_m.fit_transform(X)
 
 
     # loop over gafs per channel 
