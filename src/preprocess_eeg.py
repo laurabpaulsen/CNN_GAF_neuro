@@ -3,32 +3,54 @@ NOTES: Only one file we are interested in per subject.... maybe change preproces
 """
 
 import mne
-from mne.datasets import sample
 from pathlib import Path
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-
+import multiprocessing as mp
 
 def get_data(eeg_path, event_path):
     raw = mne.io.read_raw_brainvision(eeg_path, preload=True, verbose=False)
-    event_df =  pd.read_csv(event_path, sep = '\t', usecols=['stimulusnumber', 'onset', 'levelB'])
+    event_df =  pd.read_csv(event_path, sep = '\t', usecols=['stimulusnumber', 'onset', 'LevelA'])
 
     # mapping between the second level label and the assigned event id
     event_id = return_eventids()
 
     events = []
-    for index, row in event_df.iterrows():
-        new_event = [row.onset, 0, event_id[row.levelB]]
+    for _, row in event_df.iterrows():
+        new_event = [row.onset, 0, event_id[row.levelA]]
         events.append(new_event)
 
     return raw, events
 
 def return_eventids():
-    return {'clothing': 0, 'fruits': 1, 'plants': 2, 'mammal': 3, 'human': 4, 'furniture': 5, 'aquatic':6, 'insect': 7, 'tools': 8, 'bird': 9, 'shapes': 10, 'object':11}
+    return {"animate": 0, "inanimate": 1}
 
 def preprocess_meg(raw, events):
-    picks = mne.pick_types(raw.info, meg=False, eeg=True, eog=False, stim=False, exclude='bads')
+    """
+    Performs the following preprocessing steps on the raw EEG data.
+    - Set the reference to common average
+    - Filters the data between 1 and 40 Hz.
+    - Splits the data into epochs of 10 seconds.
+    - Resamples the data to 200 Hz.
+
+    Parameters
+    ----------
+    raw : mne.io.Raw
+        Raw EEG data.
+    events : list
+        List of events.
+    
+    Returns
+    -------
+    epochs : mne.Epochs
+        Preprocessed epoched EEG data. 
+    """
+    
+    picks = mne.pick_types(raw.info, meg=False, eeg=True, eog=False, stim=False)
+
+    # common average reference
+    raw.set_eeg_reference('average', projection=True, verbose=False)
 
     # filter raw data
     raw.filter(l_freq = 1, h_freq = 40, verbose=False)
@@ -41,30 +63,33 @@ def preprocess_meg(raw, events):
 
     return epochs
 
+def preprocess_subject(sub_path:Path):
+    path = Path(__file__)
+    out_path = path.parents[1] / 'data' / 'preprocessed' / sub_path.name
 
-def preprocess_subject(sub_path, out_path):
+    # create output directory if it does not exist
+    if not out_path.exists():
+        out_path.mkdir()
 
-    # list all vhdr_files per in subject path
-    p = sub_path.glob('**/*run-01_eeg.vhdr')
-    vhdr_files = [x for x in p if x.is_file()]
+    # get path for the run_01_eeg.vhdr file
+    vhdr_path = sub_path / f'{sub_path.name}_task-rsvp_run-01_eeg.vhdr'
 
-    # get the tsv file with event information
-    event_path = [str(x).split('_eeg.vhdr')[0]+'_events.tsv' for x in vhdr_files]
+    # tsv file with event information
+    event_path = sub_path / f'{sub_path.name}_task-rsvp_run-01_events.tsv'
 
-    for i, (eeg_path, event_path) in enumerate(zip(vhdr_files, event_path)):
-        X_path = out_path / f'timeseries_run_{i+1}.npy'
-        y_path = out_path / f'labels_run_{i+1}.npy'
+    X_path = out_path / f'X.npy'
+    y_path = out_path / f'y.npy'
         
-        raw, events = get_data(eeg_path, event_path)
+    raw, events = get_data(vhdr_path, event_path)
 
-        epochs = preprocess_meg(raw, events)
+    epochs = preprocess_meg(raw, events)
 
-        # save epochs as numpy array
-        X = epochs.get_data()
-        y = epochs.events[:, -1]
+    # save epochs as numpy array
+    X = epochs.get_data()
+    y = epochs.events[:, -1]
 
-        np.save(X_path, X)
-        np.save(y_path, y)
+    np.save(X_path, X)
+    np.save(y_path, y)
 
 
 def main():
@@ -76,14 +101,9 @@ def main():
     subjects = [x for x in bids_path.iterdir() if x.is_dir()]
     subject = [subject for subject in subjects if subject.name != "stimuli"]
 
-    for subject in tqdm(subjects):
-        out_path = path.parents[1] / 'data' / 'preprocessed' / subject.name
-
-        # create directory
-        if not out_path.exists():
-            out_path.mkdir(parents = True)
-
-        preprocess_subject(subject, out_path=out_path)
+    # use multiprocessing to speed up the process
+    pool = mp.Pool(mp.cpu_count()-1)
+    pool.map(preprocess_subject, subjects)
 
 
 if __name__ == '__main__':
