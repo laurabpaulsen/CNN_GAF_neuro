@@ -31,7 +31,10 @@ def load_gafs(gaf_path):
             
             label = str(file).split('.npy')[0]
             label = label.split('_')[-1]
-            labels.append(label)
+            if label == 'A' or label == 'F': # if participant suffered from alzheimers or frontotemporal dementia
+                labels.append(1)
+            else:
+                labels.append(0)
    
     gafs = np.array(gafs)
     labels = np.array(labels)
@@ -79,7 +82,7 @@ def train_model(model, X_train, y_train):
     history = model.fit(X_train, y_train,
                         validation_split = 0.2,
                         batch_size=64,
-                        epochs=10,
+                        epochs=3,
                         verbose=1)
 
     return model, history
@@ -196,7 +199,7 @@ def main():
     model, history = train_model(model, X_train, y_train)
 
     # evaluate model
-    clf_report = test_model(model, X_test, y_test, label_names=["A", "C", "F"])
+    clf_report = test_model(model, X_test, y_test, label_names=["Alzheimers or Dementia", "Control"])
 
     report_path = path.parents[1] / 'mdl' / 'cnn.txt'
 
