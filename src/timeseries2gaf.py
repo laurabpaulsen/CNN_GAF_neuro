@@ -84,8 +84,8 @@ def main():
     if not outpath.exists():
         outpath.mkdir()
 
-    # use multiprocessing to speed up the process
-    pool = mp.Pool(mp.cpu_count()-1)
+    # make and save GAF/MTFs
+    pool = mp.Pool(mp.cpu_count()-1)  # use multiprocessing to speed up the process
     pool.starmap(gaf_subject, [(subject, outpath, df_diag[df_diag['participant_id'] == subject]['Group'].iloc[0]) for subject in subjects])
 
 if __name__ == '__main__':
