@@ -36,7 +36,7 @@ def preprocess_eeg(raw):
     picks = mne.pick_types(raw.info, meg=False, eeg=True, eog=False, stim=False)
 
     # common average reference
-    raw = raw.set_eeg_reference(ref_channels='average')
+    raw = raw.set_eeg_reference(ref_channels='average', verbose = False)
 
     # filter raw data
     raw.filter(l_freq = 1, h_freq = 40, verbose=False)
