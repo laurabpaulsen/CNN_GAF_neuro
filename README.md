@@ -1,5 +1,6 @@
 # Classifying alzheimers using gramian angular field and 3D convolutional networks
 ![gaf_example](data/gaf_sub-001_A.png)
+
 ## Data
 The data used for this project was found on openneuro.org. The data contains EEG recordings of patients suffering from alzheimers or frontotemporal dementia, as well as from controls. 
 
@@ -15,7 +16,7 @@ bash setup.sh
 ```
 python src/preprocess_eeg.py
 ```
-4. Get the Gramian angular fields for timeseries EEG data
+4. Get the gramian angular fields (both GAFD and GAFS) and Markow transitional fields for timeseries EEG data
 ```
 python src/timeseries2gaf.py
 ```
