@@ -34,7 +34,7 @@ def trial_to_gaf(X:np.ndarray, image_size = 38):
 
     return im
 
-def gaf_subject(subject:str, outpath:Path, label:str):
+def gaf_subject(subject:str):
     """
     Converts the timeseries data into Gramian Angular Fields (GAFs) and maps them onto a image with 3 channels.
 
@@ -42,10 +42,6 @@ def gaf_subject(subject:str, outpath:Path, label:str):
     ----------
     subject : str
         Subject ID.
-    outpath : Path
-        Path to save the GAFs.
-    label : str
-        Label of the subject (i.e., 'AD', 'FD', or 'Control').
 
     Returns
     -------
@@ -53,31 +49,28 @@ def gaf_subject(subject:str, outpath:Path, label:str):
         GAFs of all trials of a subject.
     """
     path = Path(__file__).parents[1]
-    ts_path  = path / 'data' / 'preprocessed' / f'{subject}_timeseries.npy'
+    npy_path  = path / 'data' / 'preprocessed' / subject 
 
     # loading in timeseries and labels
-    X = np.load(ts_path)
+    X = np.load(npy_path / "X.npy")
+    y = np.load(npy_path / "y.npy")
 
-    # loop over all trials
-    for i in range(X.shape[0]):
+    # loop over the first 1000 trials per subject
+    for i in range(1000):
         gaf = trial_to_gaf(X[i])
 
         # save each trial as a separate numpy array
-        tmp_path = outpath / f'{subject}_{i}_{label}.npy'
+        tmp_path = path / "data" / "gaf" / f'{subject}_{i}_{y[i]}.npy'
         np.save(tmp_path, gaf)
 
 
 def main():
     path = Path(__file__).parents[1]
-    raw_path = path / 'data' /'raw'
+    preprc_path = path / 'data' /'preprocessed'
     outpath = path / 'data' / 'gaf'
 
-    # load tsv file with diagnosis information
-    df_diag = pd.read_csv(raw_path / 'participants.tsv' , sep='\t', usecols=['participant_id', 'Group'])
-
     # loop over subjects
-    subjects = [x.name for x in raw_path.iterdir() if x.is_dir()]
-    subjects = [subject for subject in subjects if subject.startswith("sub-")]
+    subjects = [x.name for x in preprc_path.iterdir()]
 
     # check that outpath exists
     # create directory
@@ -86,7 +79,7 @@ def main():
 
     # make and save GAF/MTFs
     pool = mp.Pool(mp.cpu_count()-1)  # use multiprocessing to speed up the process
-    pool.starmap(gaf_subject, [(subject, outpath, df_diag[df_diag['participant_id'] == subject]['Group'].iloc[0]) for subject in subjects])
+    pool.map(gaf_subject, subjects)
 
 if __name__ == '__main__':
     main()
