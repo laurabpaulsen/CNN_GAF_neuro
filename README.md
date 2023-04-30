@@ -1,5 +1,5 @@
 # Classifying object category using gramian angular field and 3D convolutional networks from EEG data
-![gaf_example](data/gaf_sub-001_A.png)
+![gaf_example](data/gaf_sub-01_0_0.png)
 
 ## Data
 The data used for this project was found on openneuro.org. The data consists of EEG data from 16 subjects. Each subject particpated in two experiments, where only the first was used for the current analysis. Participants were presented with a stream of images at 5 Hz. The stimuli consisted of 200 different images, which can be grouped into animate and inanimate stimuli. 
