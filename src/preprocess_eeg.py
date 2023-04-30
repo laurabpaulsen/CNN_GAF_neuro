@@ -6,7 +6,7 @@ import mne
 from pathlib import Path
 import numpy as np
 from tqdm import tqdm
-
+import multiprocessing as mp
 
 def get_data(eeg_path):
     # read .set files
@@ -84,15 +84,15 @@ def main():
 
     # loop over subjects
     subjects = [x.name for x in bids_path.iterdir() if x.is_dir()]
+    subjects = [subject for subject in subjects if subject.startswith("sub-")]
+    
+    # create directory for preprocessed data if it does not exist
+    if not outpath.exists():
+        outpath.mkdir(parents = True)
 
-    for subject in tqdm(subjects):
-        if subject.startswith('sub-'):
-
-            # create directory
-            if not outpath.exists():
-                outpath.mkdir(parents = True)
-
-            preprocess_subject(subject, outpath = outpath)
+    # use multiprocessing to speed up the process
+    pool = mp.Pool(mp.cpu_count()-1)
+    pool.starmap(preprocess_subject, [(subject, outpath) for subject in subjects])
 
 
 if __name__ == '__main__':
