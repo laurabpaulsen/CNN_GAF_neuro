@@ -13,11 +13,13 @@ def ax_plot_gaf(ax, gaf):
 def main_plotter(gaf_path: Path, save_path:Path = None):
     # load gaf
     gaf = np.load(gaf_path)
-    fig, axes = plt.subplots(2, 19, figsize = (20, 3))
+    fig, axes = plt.subplots(3, 19, figsize = (20, 3))
 
     for i in range(19):
-        ax_plot_gaf(axes[0, i], gaf[:, :, i, 0])
-        ax_plot_gaf(axes[1, i], gaf[:, :, i, 1])
+        tmp_gaf = gaf[:, :, i, :]
+        ax_plot_gaf(axes[0, i], tmp_gaf[:, :, 0])
+        ax_plot_gaf(axes[1, i], tmp_gaf[:, :, 1])
+        ax_plot_gaf(axes[2, i], tmp_gaf[:, :, 2])
 
     plt.tight_layout()
     
