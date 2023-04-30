@@ -1,8 +1,8 @@
-# Classifying alzheimers using gramian angular field and 3D convolutional networks
+# Classifying object category using gramian angular field and 3D convolutional networks from EEG data
 ![gaf_example](data/gaf_sub-001_A.png)
 
 ## Data
-The data used for this project was found on openneuro.org. The data contains EEG recordings of patients suffering from alzheimers or frontotemporal dementia, as well as from controls. 
+The data used for this project was found on openneuro.org. The data consists of EEG data from 16 subjects. Each subject particpated in two experiments, where only the first was used for the current analysis. Participants were presented with a stream of images at 5 Hz. The stimuli consisted of 200 different images, which can be grouped into animate and inanimate stimuli. 
 
 Instructions on how to download the data can be found in the `readme.md` in the `data` directory. 
 
