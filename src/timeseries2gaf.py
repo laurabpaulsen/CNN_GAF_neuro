@@ -12,6 +12,23 @@ import pandas as pd
 import multiprocessing as mp
 
 def trial_to_gaf(X:np.ndarray, image_size = 50):
+    """
+    Transform a set of time series into a single image tensor using Gramian Angular Field (GAF) and 
+    Markov Transition Field (MTF) techniques.
+
+    Parameters:
+    -----------
+    X: np.ndarray
+        The input time series
+
+    image_size: int
+        The size of the output image.
+
+    Returns:
+    --------
+    np.ndarray
+        The transformed image tensor
+    """
     trans_s = GramianAngularField(method = 'summation', image_size=image_size)
     trans_d = GramianAngularField(method = 'difference', image_size=image_size)
     trans_m = MarkovTransitionField(image_size=image_size)
@@ -30,7 +47,7 @@ def trial_to_gaf(X:np.ndarray, image_size = 50):
 
     return im
 
-def gaf_subject(subject:str):
+def gaf_subject(subject:str, truncate: int = 1000):
     """
     Converts the timeseries data into Gramian Angular Fields (GAFs) and maps them onto a image with 3 channels.
 
@@ -38,22 +55,31 @@ def gaf_subject(subject:str):
     ----------
     subject : str
         Subject ID.
+    
+    truncate : int or None
+        Number of trials to include per subject. If None all trials are included. 
 
     Returns
     -------
-    im : np.ndarray
-        GAFs of all trials of a subject.
+    None
     """
     path = Path(__file__).parents[1]
     npy_path  = path / 'data' / 'preprocessed' / subject 
+
+    if not npy_path.exists():
+        raise FileNotFoundError(f"Could not find input files for subject {subject}.")
 
     # loading in timeseries and labels
     X = np.load(npy_path / "X.npy")
     y = np.load(npy_path / "y.npy")
 
+
     # loop over the first 1000 trials per subject
-    for i in range(1000):
-        gaf = trial_to_gaf(X[i])
+    if truncate:
+        X = X[:truncate]
+
+    for i, x in enumerate(X):
+        gaf = trial_to_gaf(x)
 
         # save each trial as a separate numpy array
         tmp_path = path / "data" / "gaf" / f'{subject}_{i}_{y[i]}.npy'
