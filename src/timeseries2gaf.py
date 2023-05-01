@@ -11,7 +11,7 @@ import pandas as pd
 
 import multiprocessing as mp
 
-def trial_to_gaf(X:np.ndarray, image_size = 38):
+def trial_to_gaf(X:np.ndarray, image_size = 50):
     trans_s = GramianAngularField(method = 'summation', image_size=image_size)
     trans_d = GramianAngularField(method = 'difference', image_size=image_size)
     trans_m = MarkovTransitionField( image_size=image_size)
