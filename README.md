@@ -1,4 +1,4 @@
-# Classifying object category using gramian angular field and 3D convolutional networks from EEG data
+# CNN classification of object category from EEG timeseries data transformed to images
 This repository holds the code for the final project for Visual Analytics (S2023). This includes preprocessing of EEG data, converting the timeseries from the sensors to gramian angular fields (both GAFS and GAFD) and Markow transitional fields, and training and testing a 3D convolutional neural network on the data.
 
 Below is an example of the layers of the data fed to the CNN model. The first row shows the GAFS, the second row is the GAFD, and the third row is the Markow transitional field. Only the first 10 timeseries are shown, but for each trial there are 63 timeseries (one for each sensor). The GAFS and GAFD are contain values between 0 and 1, while the Markow transitional field contains values between 0 and 1.
