@@ -14,23 +14,19 @@ import multiprocessing as mp
 def trial_to_gaf(X:np.ndarray, image_size = 50):
     trans_s = GramianAngularField(method = 'summation', image_size=image_size)
     trans_d = GramianAngularField(method = 'difference', image_size=image_size)
-    trans_m = MarkovTransitionField( image_size=image_size)
-    # transform each trial into a GAF
+    trans_m = MarkovTransitionField(image_size=image_size)
+    
+    # transform each trial
     X_gaf_s = trans_s.fit_transform(X)
     X_gaf_d = trans_d.fit_transform(X)
     X_mtf = trans_m.fit_transform(X)
 
+    # loop over GAFs and MTF per channel
+    im = np.stack([X_gaf_s[0], X_gaf_d[0], X_mtf[0]], axis=-1)[:, :, np.newaxis, :]
 
-    # loop over gafs per channel 
-    for i in range(X_gaf_s.shape[0]):
-        gaf = np.stack([X_gaf_s[i], X_gaf_d[i], X_mtf[i]], axis=-1)
-        gaf = np.reshape(gaf, (image_size, image_size, 1, 3))
-
-        if i == 0:
-            im = gaf
-
-        else:
-            im = np.concatenate((im, gaf), axis = 2)
+    for gaf_s, gaf_d, mtf in zip(X_gaf_s[1:], X_gaf_d[1:], X_mtf[1:]):
+        gaf = np.stack([gaf_s, gaf_d, mtf], axis=-1)[:, :, np.newaxis, :]
+        im = np.concatenate((im, gaf), axis=2)
 
     return im
 
@@ -73,7 +69,6 @@ def main():
     subjects = [x.name for x in preprc_path.iterdir()]
 
     # check that outpath exists
-    # create directory
     if not outpath.exists():
         outpath.mkdir()
 
