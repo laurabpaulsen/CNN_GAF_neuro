@@ -2,7 +2,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
-import os
 from tqdm import tqdm
 
 # sklearn tools
@@ -15,6 +14,32 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Dataset
+
+
+import argparse
+
+
+# set parameters for plots
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['image.cmap'] = 'RdBu_r'
+plt.rcParams['axes.labelsize'] = 14
+plt.rcParams['axes.titlesize'] = 14
+plt.rcParams['xtick.labelsize'] = 12
+plt.rcParams['ytick.labelsize'] = 12
+plt.rcParams['legend.fontsize'] = 10
+plt.rcParams['legend.title_fontsize'] = 12
+plt.rcParams['figure.titlesize'] = 16
+plt.rcParams['figure.dpi'] = 300
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Train a CNN on GAFs')
+    parser.add_argument('--epochs', type=int, default=10, help='Number of epochs to train for')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
+    parser.add_argument('--lr', type=float, default=0.01, help='Learning rate')
+
+    return parser.parse_args()
+
 
 class GAFDataset(Dataset):
     def __init__(self, data, labels):
@@ -158,3 +183,74 @@ def balance_classes(X, y):
     y_equal = np.delete(y, remove_ind, axis = 0)
 
     return X_equal, y_equal
+
+def plot_history(train_losses, val_losses, train_accs, val_accs):
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    ax[0].plot(train_losses, label="Train Loss")
+    ax[0].plot(val_losses, label="Validation Loss")
+    ax[0].set_xlabel("Epoch")
+    ax[0].set_ylabel("Loss")
+    ax[0].legend()
+
+    ax[1].plot(train_accs, label="Train Accuracy")
+    ax[1].plot(val_accs, label="Validation Accuracy")
+    ax[1].set_xlabel("Epoch")
+    ax[1].set_ylabel("Accuracy")
+    ax[1].legend()
+
+def predict(model, test_loader):
+    model.eval()
+    y_pred = []
+    with torch.no_grad():
+        for X, y in test_loader:
+            y_hat = model(X.float())
+            y_pred.append(torch.sigmoid(y_hat).numpy())
+    return np.concatenate(y_pred)
+
+
+def main():
+    args = parse_args()
+
+    path = Path(__file__)
+
+    # load in data
+    gaf_path = Path(path.parents[1] / "data" / "gaf")
+
+    gafs, labels = load_gafs(gaf_path)
+
+    # balance classes
+    gafs, labels = balance_classes(gafs, labels)
+
+    # split into train, validation, and test sets
+    X_train, X_test, y_train, y_test = train_test_split(gafs, labels, test_size=0.2, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=42)
+
+    # create dataloaders
+    train_loader = DataLoader(GAFDataset(X_train, y_train), batch_size=args.batch_size, shuffle=True)
+    val_loader = DataLoader(GAFDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
+    test_loader = DataLoader(GAFDataset(X_test, y_test), batch_size=args.batch_size, shuffle=True)
+
+    # prep model
+    model, optimizer, criterion = prep_model()
+
+    # train model
+    train_losses, val_losses, train_accs, val_accs = train_model(model, optimizer, criterion, train_loader, val_loader, epochs=args.epochs)
+
+    # save model
+    torch.save(model.state_dict(), Path(path.parents[1] / "mdl" / "gaf_model.pt"))
+
+    # plot losses and accuracies
+    plot_history(train_losses, val_losses, train_accs, val_accs, save_path=Path(path.parents[1] / "mdl" / "history.png"))
+
+    # test model
+    predictions = predict(model, test_loader)
+
+    # report metrics
+    clf_report = classification_report(y_test, np.round(predictions), target_names=["Animate", "Inanimate"])
+
+    # save metrics
+    with open(Path(path.parents[1] / "mdl" / "classification_report.txt"), "w") as f:
+        f.write(clf_report)
+
+if __name__ == "__main__":
+    main()
