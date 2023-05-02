@@ -1,8 +1,8 @@
-# data tools
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 from tqdm import tqdm
+import argparse
 
 # sklearn tools
 from sklearn.model_selection import train_test_split
@@ -12,11 +12,7 @@ from sklearn.metrics import classification_report
 import torch
 import torch.nn as nn
 import torch.optim as optim
-#import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Dataset
-
-
-import argparse
 
 
 # set parameters for plots
@@ -73,7 +69,7 @@ def load_gafs(gaf_path):
     
     return gafs, labels
 
-def prep_model(height = 50, width = 50, depth=63):
+def prep_model():
     class Net(nn.Module):
         def __init__(self):
             super(Net, self).__init__()
@@ -108,7 +104,35 @@ def prep_model(height = 50, width = 50, depth=63):
 
     return model, optimizer, criterion
 
-def train_model(model, optimizer, criterion, train_loader, val_loader, epochs):
+def train_model(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn, train_loader:DataLoader, val_loader:DataLoader, epochs: int):
+    """Train the model and return the losses and accuracies
+    
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The model to train
+    optimizer : torch.optim
+        The optimizer to use
+    criterion : torch.nn
+        The loss function to use
+    train_loader : DataLoader
+        The training data loader
+    val_loader : DataLoader
+        The validation data loader
+    epochs : int
+        The number of epochs to train for
+    
+    Returns
+    -------
+    train_losses : list
+        The training losses
+    val_losses : list
+        The validation losses
+    train_accs : list
+        The training accuracies
+    val_accs : list
+        The validation accuracies
+    """
     # train the model
     train_losses, val_losses = [], []
     train_accs, val_accs = [], []
@@ -231,7 +255,7 @@ def main():
     # create dataloaders
     train_loader = DataLoader(GAFDataset(X_train, y_train), batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(GAFDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
-    test_loader = DataLoader(GAFDataset(X_test, y_test), batch_size=args.batch_size, shuffle=True)
+    test_loader = DataLoader(GAFDataset(X_test, y_test), batch_size=args.batch_size)
 
     # prep model
     model, optimizer, criterion = prep_model()
