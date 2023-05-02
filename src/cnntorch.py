@@ -12,7 +12,7 @@ from sklearn.metrics import classification_report
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision.transforms as transforms
+#import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Dataset
 
 
@@ -61,7 +61,7 @@ def load_gafs(gaf_path):
 
     files = list(gaf_path.iterdir())
 
-    for file in tqdm(files[:10000], desc="Loading in data"):
+    for file in tqdm(files[:5000], desc="Loading in data"):
         if file.is_file():
             gaf = np.load(file)
             gafs.append(gaf)
@@ -77,13 +77,13 @@ def prep_model(height = 50, width = 50, depth=63):
     class Net(nn.Module):
         def __init__(self):
             super(Net, self).__init__()
-            self.conv1 = nn.Conv3d(3, 18, kernel_size=6)
-            self.pool1 = nn.MaxPool3d(kernel_size=2)
+            self.conv1 = nn.Conv3d(50, 18, kernel_size=3)
+            self.pool1 = nn.MaxPool3d(kernel_size=1)
             self.bn1 = nn.BatchNorm3d(18)
             self.drop1 = nn.Dropout3d(p=0.2)
 
-            self.conv2 = nn.Conv3d(18, 128, kernel_size=6)
-            self.pool2 = nn.MaxPool3d(kernel_size=2)
+            self.conv2 = nn.Conv3d(18, 128, kernel_size=(3, 3, 1))
+            self.pool2 = nn.MaxPool3d(kernel_size=(2, 2, 1))
             self.bn2 = nn.BatchNorm3d(128)
             self.drop2 = nn.Dropout3d(p=0.2)
 
@@ -184,7 +184,7 @@ def balance_classes(X, y):
 
     return X_equal, y_equal
 
-def plot_history(train_losses, val_losses, train_accs, val_accs):
+def plot_history(train_losses, val_losses, train_accs, val_accs, save_path = None):
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
     ax[0].plot(train_losses, label="Train Loss")
     ax[0].plot(val_losses, label="Validation Loss")
@@ -197,6 +197,9 @@ def plot_history(train_losses, val_losses, train_accs, val_accs):
     ax[1].set_xlabel("Epoch")
     ax[1].set_ylabel("Accuracy")
     ax[1].legend()
+
+    if save_path:
+        plt.savefig(save_path)
 
 def predict(model, test_loader):
     model.eval()
