@@ -133,9 +133,16 @@ def train_model(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn
     val_accs : list
         The validation accuracies
     """
-    # train the model
-    train_losses, val_losses = [], []
-    train_accs, val_accs = [], []
+
+    # dict for storing losses and accuracies
+    history = {
+        'train_loss': [],
+        'val_loss': [],
+        'train_acc': [],
+        'val_acc': []
+    }
+
+
 
     for epoch in range(epochs):
         model.train()
@@ -151,8 +158,9 @@ def train_model(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn
 
         train_loss /= len(train_loader)
         train_acc /= len(train_loader)
-        train_losses.append(train_loss)
-        train_accs.append(train_acc)
+
+        history['train_loss'].append(train_loss)
+        history['train_acc'].append(train_acc)
 
         model.eval()
         val_loss, val_acc = 0.0, 0.0
@@ -165,13 +173,12 @@ def train_model(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn
 
             val_loss /= len(val_loader)
             val_acc /= len(val_loader)
-            val_losses.append(val_loss)
-            val_accs.append(val_acc)
+            history['val_loss'].append(val_loss)
+            history['val_acc'].append(val_acc)
 
         print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.2f}, train acc: {train_acc:.2f}, val loss: {val_loss:.2f}, val acc: {val_acc:.2f}")
 
-    return train_losses, val_losses, train_accs, val_accs
-
+    return history
 
 def balance_classes(X, y):
     """
@@ -208,16 +215,16 @@ def balance_classes(X, y):
 
     return X_equal, y_equal
 
-def plot_history(train_losses, val_losses, train_accs, val_accs, save_path = None):
+def plot_history(history, save_path = None):
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    ax[0].plot(train_losses, label="Train Loss")
-    ax[0].plot(val_losses, label="Validation Loss")
+    ax[0].plot(history['train_loss'], label="Train Loss")
+    ax[0].plot(history['val_loss'], label="Validation Loss")
     ax[0].set_xlabel("Epoch")
     ax[0].set_ylabel("Loss")
     ax[0].legend()
 
-    ax[1].plot(train_accs, label="Train Accuracy")
-    ax[1].plot(val_accs, label="Validation Accuracy")
+    ax[1].plot(history['train_acc'], label="Train Accuracy")
+    ax[1].plot(history['val_acc'], label="Validation Accuracy")
     ax[1].set_xlabel("Epoch")
     ax[1].set_ylabel("Accuracy")
     ax[1].legend()
@@ -261,13 +268,13 @@ def main():
     model, optimizer, criterion = prep_model()
 
     # train model
-    train_losses, val_losses, train_accs, val_accs = train_model(model, optimizer, criterion, train_loader, val_loader, epochs=args.epochs)
+    history = train_model(model, optimizer, criterion, train_loader, val_loader, epochs=args.epochs)
 
     # save model
     torch.save(model.state_dict(), Path(path.parents[1] / "mdl" / "gaf_model.pt"))
 
     # plot losses and accuracies
-    plot_history(train_losses, val_losses, train_accs, val_accs, save_path=Path(path.parents[1] / "mdl" / "history.png"))
+    plot_history(history, save_path=Path(path.parents[1] / "mdl" / "history.png"))
 
     # test model
     predictions = predict(model, test_loader)
