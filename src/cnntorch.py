@@ -57,7 +57,7 @@ def load_gafs(gaf_path):
 
     files = list(gaf_path.iterdir())
 
-    for file in tqdm(files[:5000], desc="Loading in data"):
+    for file in tqdm(files[:2000], desc="Loading in data"):
         if file.is_file():
             gaf = np.load(file)
             gafs.append(gaf)
@@ -168,7 +168,7 @@ def train_model(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn
             val_losses.append(val_loss)
             val_accs.append(val_acc)
 
-        print(f"Epoch {epoch+1}/{epochs}, Train Loss: {train_loss:.4f}, Train Accuracy: {train_acc:.4f}, Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_acc:.4f}")
+        print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.2f}, train acc: {train_acc:.2f}, val loss: {val_loss:.2f}, val acc: {val_acc:.2f}")
 
     return train_losses, val_losses, train_accs, val_accs
 
