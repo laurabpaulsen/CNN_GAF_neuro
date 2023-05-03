@@ -30,9 +30,10 @@ plt.rcParams['figure.dpi'] = 300
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a CNN on GAFs')
-    parser.add_argument('--epochs', type=int, default=10, help='Number of epochs to train for')
-    parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
-    parser.add_argument('--lr', type=float, default=0.01, help='Learning rate')
+    parser.add_argument('--epochs', type=int, default=20, help='Number of epochs to train for')
+    parser.add_argument('--batch_size', type=int, default=20, help='Batch size')
+    parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate')
+    parser.add_argument('--sub', type=str, default='sub-01')
 
     return parser.parse_args()
 
@@ -57,7 +58,7 @@ def load_gafs(gaf_path):
 
     files = list(gaf_path.iterdir())
 
-    for file in tqdm(files[:2000], desc="Loading in data"):
+    for file in tqdm(files, desc="Loading in data"):
         if file.is_file():
             gaf = np.load(file)
             gafs.append(gaf)
@@ -69,7 +70,7 @@ def load_gafs(gaf_path):
     
     return gafs, labels
 
-def prep_model():
+def prep_model(lr):
     class Net(nn.Module):
         def __init__(self):
             super(Net, self).__init__()
@@ -83,6 +84,11 @@ def prep_model():
             self.bn2 = nn.BatchNorm3d(128)
             self.drop2 = nn.Dropout3d(p=0.2)
 
+            self.conv3 = nn.Conv3d(128, 128, kernel_size=(3, 3, 1))
+            self.pool3 = nn.MaxPool3d(kernel_size=(2, 2, 1))
+            self.bn3 = nn.BatchNorm3d(128)
+            self.drop3 = nn.Dropout3d(p=0.2)
+
             self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
             self.fc1 = nn.Linear(128, 256)
             self.fc2 = nn.Linear(256, 1)
@@ -90,6 +96,7 @@ def prep_model():
         def forward(self, x):
             x = self.drop1(self.bn1(self.pool1(torch.relu(self.conv1(x)))))
             x = self.drop2(self.bn2(self.pool2(torch.relu(self.conv2(x)))))
+            x = self.drop3(self.bn3(self.pool3(torch.relu(self.conv3(x)))))
             x = self.avgpool(x)
             x = x.view(-1, 128)
             x = torch.relu(self.fc1(x))
@@ -99,7 +106,7 @@ def prep_model():
     model = Net()
 
     # define optimizer and loss function
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = nn.BCEWithLogitsLoss()
 
     return model, optimizer, criterion
@@ -124,14 +131,8 @@ def train_model(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn
     
     Returns
     -------
-    train_losses : list
-        The training losses
-    val_losses : list
-        The validation losses
-    train_accs : list
-        The training accuracies
-    val_accs : list
-        The validation accuracies
+    history : dict
+        Dictionary with the train and validation loss and accuracies. 
     """
 
     # dict for storing losses and accuracies
@@ -141,8 +142,6 @@ def train_model(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn
         'train_acc': [],
         'val_acc': []
     }
-
-
 
     for epoch in range(epochs):
         model.train()
@@ -154,7 +153,7 @@ def train_model(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
-            train_acc += ((torch.round(torch.sigmoid(y_hat)) == y).sum().item() / len(y))
+            train_acc += ((torch.round(torch.sigmoid(y_hat.view(-1)))==y).sum().item() / len(y))
 
         train_loss /= len(train_loader)
         train_acc /= len(train_loader)
@@ -169,14 +168,14 @@ def train_model(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn
                 y_hat = model(X.float())
                 loss = criterion(y_hat.view(-1), y.float())
                 val_loss += loss.item()
-                val_acc += ((torch.round(torch.sigmoid(y_hat)) == y).sum().item() / len(y))
+                val_acc += ((torch.round(torch.sigmoid(y_hat.view(-1)))==y).sum().item() / len(y))
 
             val_loss /= len(val_loader)
             val_acc /= len(val_loader)
             history['val_loss'].append(val_loss)
             history['val_acc'].append(val_acc)
 
-        print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.2f}, train acc: {train_acc:.2f}, val loss: {val_loss:.2f}, val acc: {val_acc:.2f}")
+        print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, train acc: {train_acc:.4f}, val loss: {val_loss:.4f}, val acc: {val_acc:.4f}")
 
     return history
 
@@ -229,6 +228,8 @@ def plot_history(history, save_path = None):
     ax[1].set_ylabel("Accuracy")
     ax[1].legend()
 
+    plt.tight_layout()
+
     if save_path:
         plt.savefig(save_path)
 
@@ -239,6 +240,7 @@ def predict(model, test_loader):
         for X, y in test_loader:
             y_hat = model(X.float())
             y_pred.append(torch.sigmoid(y_hat).numpy())
+
     return np.concatenate(y_pred)
 
 
@@ -248,7 +250,7 @@ def main():
     path = Path(__file__)
 
     # load in data
-    gaf_path = Path(path.parents[1] / "data" / "gaf")
+    gaf_path = path.parents[1] / "data" / "gaf" / args.sub
 
     gafs, labels = load_gafs(gaf_path)
 
@@ -256,8 +258,8 @@ def main():
     gafs, labels = balance_classes(gafs, labels)
 
     # split into train, validation, and test sets
-    X_train, X_test, y_train, y_test = train_test_split(gafs, labels, test_size=0.2, random_state=42)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(gafs, labels, test_size=0.1, random_state=42, stratify = labels)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.3, random_state=42, stratify = y_train)
 
     # create dataloaders
     train_loader = DataLoader(GAFDataset(X_train, y_train), batch_size=args.batch_size, shuffle=True)
@@ -265,16 +267,23 @@ def main():
     test_loader = DataLoader(GAFDataset(X_test, y_test), batch_size=args.batch_size)
 
     # prep model
-    model, optimizer, criterion = prep_model()
+    model, optimizer, criterion = prep_model(lr = args.lr)
 
     # train model
     history = train_model(model, optimizer, criterion, train_loader, val_loader, epochs=args.epochs)
 
+    # subject output path
+    sub_mdl_path = path.parents[1] / "mdl" / args.sub 
+    
+    # check that outpath exists
+    if not sub_mdl_path.exists():
+        sub_mdl_path.mkdir()
+
     # save model
-    torch.save(model.state_dict(), Path(path.parents[1] / "mdl" / "gaf_model.pt"))
+    torch.save(model.state_dict(), sub_mdl_path / "gaf_model.pt")
 
     # plot losses and accuracies
-    plot_history(history, save_path=Path(path.parents[1] / "mdl" / "history.png"))
+    plot_history(history, save_path= sub_mdl_path / "history.png")
 
     # test model
     predictions = predict(model, test_loader)
@@ -283,7 +292,7 @@ def main():
     clf_report = classification_report(y_test, np.round(predictions), target_names=["Animate", "Inanimate"])
 
     # save metrics
-    with open(Path(path.parents[1] / "mdl" / "classification_report.txt"), "w") as f:
+    with open(sub_mdl_path / "classification_report.txt", "w") as f:
         f.write(clf_report)
 
 if __name__ == "__main__":
