@@ -28,7 +28,7 @@ def get_data(eeg_path, event_path):
 def return_eventids():
     return {"animate": 0, "inanimate": 1}
 
-def preprocess_meg(raw, events):
+def preprocess_eeg(raw, events):
     """
     Performs the following preprocessing steps on the raw EEG data.
     - Set the reference to common average
@@ -58,7 +58,7 @@ def preprocess_meg(raw, events):
     raw.filter(l_freq = 1, h_freq = 40, verbose=False)
 
     # epoch data
-    epochs = mne.Epochs(raw, events, tmin=0, tmax=0.2, proj=True, picks=picks, baseline=None, preload=True, verbose=False)
+    epochs = mne.Epochs(raw, events, tmin=0, tmax=0.2, proj=True, picks=picks, baseline=None, preload=True, verbose=False, reject ={'eeg': 150e-6})
 
     # resample epochs
     epochs.resample(250)
@@ -84,7 +84,7 @@ def preprocess_subject(sub_path:Path):
         
     raw, events = get_data(vhdr_path, event_path)
 
-    epochs = preprocess_meg(raw, events)
+    epochs = preprocess_eeg(raw, events)
 
     # save epochs as numpy array
     X = epochs.get_data()
@@ -102,10 +102,11 @@ def main():
     # loop over subjects
     subjects = [x for x in bids_path.iterdir() if x.is_dir()]
     subjects = [subject for subject in subjects if subject.name.startswith("sub-")]
+    print(subjects)
 
     # use multiprocessing to speed up the process
-    pool = mp.Pool(mp.cpu_count()-1)
-    pool.imap(preprocess_subject, subjects)
+    pool = mp.Pool(mp.cpu_count())
+    pool.map(preprocess_subject, subjects)
 
 
 if __name__ == '__main__':
