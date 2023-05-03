@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from tqdm import tqdm
 import argparse
+import multiprocessing as mp
 
 # sklearn tools
 from sklearn.model_selection import train_test_split
@@ -51,24 +52,38 @@ class GAFDataset(Dataset):
         y = self.labels[idx]
         return X, y
 
-def load_gafs(gaf_path):
-    """Load gaf images from path and return them as a numpy array"""
+def load_gaf(file: Path):
+    """
+    Load a gaf image from path and return it as a numpy array
+    """
+    
+    gaf = np.load(file)
+    label = str(file)[-5]
+    
+    return gaf, int(label)
+
+def load_gafs(gaf_path: Path, n_jobs: int = 1):
+    """
+    Load gaf images from path and return them as a numpy array using multiprocessing
+    """
     gafs = []
     labels = []
-
+    
     files = list(gaf_path.iterdir())
 
-    for file in tqdm(files, desc="Loading in data"):
-        if file.is_file():
-            gaf = np.load(file)
-            gafs.append(gaf)
 
-            label = str(file)[-5]
-            labels.append(int(label))
-    gafs = np.array(gafs)
-    labels = np.array(labels)
+    if n_jobs > 1:
+        with mp.Pool(n_jobs) as pool:
+            for gaf, label in tqdm(pool.imap(load_gaf, files), total=len(files), desc="Loading in data"):
+                gafs.append(gaf)
+                labels.append(label)
+    else:
+        for file in tqdm(files, desc="Loading in data"):
+            gaf, label = load_gaf(file)
+            gafs.append(gaf)
+            labels.append(label)
     
-    return gafs, labels
+    return np.array(gafs), np.array(labels)
 
 def prep_model(lr):
     class Net(nn.Module):
