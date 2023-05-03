@@ -34,7 +34,6 @@ def preprocess_eeg(raw, events):
     - Set the reference to common average
     - Filters the data between 1 and 40 Hz.
     - Splits the data into epochs of 10 seconds.
-    - Resamples the data to 200 Hz.
 
     Parameters
     ----------
@@ -59,10 +58,6 @@ def preprocess_eeg(raw, events):
 
     # epoch data
     epochs = mne.Epochs(raw, events, tmin=0, tmax=0.2, proj=True, picks=picks, baseline=None, preload=True, verbose=False, reject ={'eeg': 150e-6})
-
-    # resample epochs
-    epochs.resample(250)
-
     return epochs
 
 def preprocess_subject(sub_path:Path):
@@ -102,7 +97,6 @@ def main():
     # loop over subjects
     subjects = [x for x in bids_path.iterdir() if x.is_dir()]
     subjects = [subject for subject in subjects if subject.name.startswith("sub-")]
-    print(subjects)
 
     # use multiprocessing to speed up the process
     pool = mp.Pool(mp.cpu_count())
