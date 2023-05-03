@@ -4,3 +4,4 @@ dtcwt
 tensorflow-cpu
 numpy
 pandas
+torch
