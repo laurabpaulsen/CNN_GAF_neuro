@@ -47,7 +47,7 @@ def trial_to_gaf(X:np.ndarray, image_size = 50):
 
     return im
 
-def gaf_subject(subject:str, truncate: int = 1000):
+def gaf_subject(subject:str, truncate = None):
     """
     Converts the timeseries data into Gramian Angular Fields (GAFs) and maps them onto a image with 3 channels.
 
@@ -65,9 +65,13 @@ def gaf_subject(subject:str, truncate: int = 1000):
     """
     path = Path(__file__).parents[1]
     npy_path  = path / 'data' / 'preprocessed' / subject 
+    outpath = path / 'data' / 'gaf' / subject 
 
     if not npy_path.exists():
         raise FileNotFoundError(f"Could not find input files for subject {subject}.")
+    if not outpath.exists():
+        outpath.mkdir()
+        
 
     # loading in timeseries and labels
     X = np.load(npy_path / "X.npy")
@@ -82,7 +86,7 @@ def gaf_subject(subject:str, truncate: int = 1000):
         gaf = trial_to_gaf(x)
 
         # save each trial as a separate numpy array
-        tmp_path = path / "data" / "gaf" / f'{subject}_{i}_{y[i]}.npy'
+        tmp_path = outpath / f'trial_{i}_label_{y[i]}.npy'
         np.save(tmp_path, gaf)
 
 
