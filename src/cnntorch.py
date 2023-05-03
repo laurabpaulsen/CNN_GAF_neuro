@@ -32,8 +32,8 @@ plt.rcParams['figure.dpi'] = 300
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a CNN on GAFs')
     parser.add_argument('--epochs', type=int, default=20, help='Number of epochs to train for')
-    parser.add_argument('--batch_size', type=int, default=20, help='Batch size')
-    parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
+    parser.add_argument('--lr', type=float, default=0.01, help='Learning rate')
     parser.add_argument('--sub', type=str, default='sub-01')
 
     return parser.parse_args()
@@ -55,6 +55,18 @@ class GAFDataset(Dataset):
 def load_gaf(file: Path):
     """
     Load a gaf image from path and return it as a numpy array
+
+    Parameters
+    ----------
+    file : Path
+        Path to gaf
+    
+    Returns
+    -------
+    gaf : np.array
+        The gaf image
+    label : int
+        Label indicating the label (animate or inanimate)
     """
     
     gaf = np.load(file)
@@ -64,13 +76,12 @@ def load_gaf(file: Path):
 
 def load_gafs(gaf_path: Path, n_jobs: int = 1):
     """
-    Load gaf images from path and return them as a numpy array using multiprocessing
+    Loads gaf images from path and return them as a numpy array using multiprocessing
     """
     gafs = []
     labels = []
     
     files = list(gaf_path.iterdir())
-
 
     if n_jobs > 1:
         with mp.Pool(n_jobs) as pool:
@@ -98,11 +109,12 @@ def prep_model(lr):
             self.pool2 = nn.MaxPool3d(kernel_size=(2, 2, 1))
             self.bn2 = nn.BatchNorm3d(128)
             self.drop2 = nn.Dropout3d(p=0.2)
-
+            
             self.conv3 = nn.Conv3d(128, 128, kernel_size=(3, 3, 1))
             self.pool3 = nn.MaxPool3d(kernel_size=(2, 2, 1))
             self.bn3 = nn.BatchNorm3d(128)
             self.drop3 = nn.Dropout3d(p=0.2)
+            
 
             self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
             self.fc1 = nn.Linear(128, 256)
@@ -194,40 +206,6 @@ def train_model(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn
 
     return history
 
-def balance_classes(X, y):
-    """
-    Balances the class weight by removing trials from classes with more trials
-
-    Parameters
-    ----------
-    X : array
-        Data array with n_trials as the first dimension
-    y : array
-        Array with shape (n_trials, )
-    
-    Returns
-    -------
-    X_equal : array
-        Data array with a equal number of trials for each class
-    y_equal : array
-        Array with shape (n_trials, ) containing classes with equal number of trials for each class
-    """
-    keys, counts = np.unique(y, return_counts = True)
-
-    # get the minimum number of trials
-    min_count = np.min(counts)
-
-    # loop through each class and remove trials
-    remove_ind = []
-    for key, count in zip(keys, counts):
-        index = np.where(np.array(y) == key)
-        random_choices = np.random.choice(len(index[0]), size = count-min_count, replace=False)
-        remove_ind.extend([index[0][i] for i in random_choices])
-    
-    X_equal = np.delete(X, remove_ind, axis = 0)
-    y_equal = np.delete(y, remove_ind, axis = 0)
-
-    return X_equal, y_equal
 
 def plot_history(history, save_path = None):
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
@@ -258,6 +236,20 @@ def predict(model, test_loader):
 
     return np.concatenate(y_pred)
 
+ 
+def prep_data(gaf_path, batch_size):
+    gafs, labels = load_gafs(gaf_path, n_jobs=mp.cpu_count())
+
+    # split into train, validation, and test sets
+    X_train, X_test, y_train, y_test = train_test_split(gafs, labels, test_size=0.2, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.4, random_state=42)
+
+    # create dataloaders
+    train_loader = DataLoader(GAFDataset(X_train, y_train), batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(GAFDataset(X_val, y_val), batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(GAFDataset(X_test, y_test), batch_size=batch_size)
+
+    return train_loader, val_loader, test_loader
 
 def main():
     args = parse_args()
@@ -267,19 +259,8 @@ def main():
     # load in data
     gaf_path = path.parents[1] / "data" / "gaf" / args.sub
 
-    gafs, labels = load_gafs(gaf_path)
-
-    # balance classes
-    gafs, labels = balance_classes(gafs, labels)
-
-    # split into train, validation, and test sets
-    X_train, X_test, y_train, y_test = train_test_split(gafs, labels, test_size=0.1, random_state=42, stratify = labels)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.3, random_state=42, stratify = y_train)
-
-    # create dataloaders
-    train_loader = DataLoader(GAFDataset(X_train, y_train), batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(GAFDataset(X_val, y_val), batch_size=args.batch_size, shuffle=True)
-    test_loader = DataLoader(GAFDataset(X_test, y_test), batch_size=args.batch_size)
+    # get dataloaders
+    train_loader, val_loader, test_loader = prep_data(gaf_path, args.batch_size)
 
     # prep model
     model, optimizer, criterion = prep_model(lr = args.lr)
@@ -304,7 +285,7 @@ def main():
     predictions = predict(model, test_loader)
 
     # report metrics
-    clf_report = classification_report(y_test, np.round(predictions), target_names=["Animate", "Inanimate"])
+    clf_report = classification_report(test_loader.labels, np.round(predictions), target_names=["Animate", "Inanimate"])
 
     # save metrics
     with open(sub_mdl_path / "classification_report.txt", "w") as f:
