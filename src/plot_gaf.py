@@ -62,6 +62,6 @@ def main_plotter(gaf_path: Path, save_path:Path = None):
 if __name__ in "__main__":
     path = Path(__file__).parents[1]
 
-    gaf_path = path / "data" / "gaf" / "sub-01_0_0.npy"
+    gaf_path = path / "data" / "gaf" / "sub-01" / "trial_0_label_0.npy"
     plot_path = path / "data" / "gaf_sub-01_0_0.png"
     main_plotter(gaf_path, save_path=plot_path)
