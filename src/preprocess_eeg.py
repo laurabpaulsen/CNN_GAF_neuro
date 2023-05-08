@@ -10,6 +10,23 @@ from tqdm import tqdm
 import multiprocessing as mp
 
 def get_data(eeg_path, event_path):
+    """
+    Loads in the raw EEG data and the event information.
+
+    Parameters
+    ----------
+    eeg_path : Path
+        Path to the eeg file.
+    event_path : Path
+        Path to the tsv file with event information.
+    
+    Returns
+    -------
+    raw : mne.io.Raw
+        Raw EEG data.
+    events : list
+        Array with event information.
+    """
     raw = mne.io.read_raw_brainvision(eeg_path, preload=True, verbose=False)
     event_df =  pd.read_csv(event_path, sep = '\t', usecols=['stimulusnumber', 'onset', 'levelA'])
     event_df = event_df[event_df["levelA"] != 'targets']
@@ -19,7 +36,6 @@ def get_data(eeg_path, event_path):
 
     events = []
     for _, row in event_df.iterrows():
-        #print(row.levelA)
         new_event = [row.onset, 0, event_id[row.levelA]]
         events.append(new_event)
 
@@ -33,7 +49,7 @@ def preprocess_eeg(raw, events):
     Performs the following preprocessing steps on the raw EEG data.
     - Set the reference to common average
     - Filters the data between 1 and 40 Hz.
-    - Splits the data into epochs of 10 seconds.
+    - Splits the data into epochs of 500 ms.
 
     Parameters
     ----------
@@ -61,6 +77,15 @@ def preprocess_eeg(raw, events):
     return epochs
 
 def preprocess_subject(sub_path:Path):
+    """
+    Preprocesses the EEG data for a single subject and saves the data.
+
+    Parameters
+    ----------
+    sub_path : Path
+        Path to the subject directory.
+    """
+
     path = Path(__file__)
     out_path = path.parents[1] / 'data' / 'preprocessed' / sub_path.name
 
@@ -94,7 +119,6 @@ def main():
 
     bids_path = path.parents[1] / 'data' / 'raw'
 
-    # loop over subjects
     subjects = [x for x in bids_path.iterdir() if x.is_dir()]
     subjects = [subject for subject in subjects if subject.name.startswith("sub-")]
 
