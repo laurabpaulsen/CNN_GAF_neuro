@@ -32,7 +32,7 @@ plt.rcParams['figure.dpi'] = 300
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a CNN on GAFs')
-    parser.add_argument('--epochs', type=int, default=10, help='Number of epochs to train for')
+    parser.add_argument('--epochs', type=int, default=8, help='Number of epochs to train for')
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
     parser.add_argument('--sub', type=str, default='sub-01')
@@ -87,7 +87,7 @@ def load_gafs(gaf_path: Path, n_jobs: int = 1, all_subjects=False):
     if all_subjects:
         files = [list(dir.iterdir()) for dir in files]
         files = [item for sublist in files for item in sublist]
-        files = random.choices(files, k=5000)
+        #files = random.choices(files, k=5000)
 
     if n_jobs > 1:
         with mp.Pool(n_jobs) as pool:
@@ -257,6 +257,12 @@ def prep_data(gaf_path, batch_size, all=False):
 
     return train_loader, val_loader, test_loader, y_test
 
+def create_classification_report(y_test, y_pred):
+    classification_report(y_test, y_pred, target_names=["Animate", "Inanimate"])
+
+    # get accuracy
+    acc = (y_test == y_pred).sum() / len(y_test)
+
 def main():
     args = parse_args()
     path = Path(__file__)
@@ -295,10 +301,17 @@ def main():
     predictions = predict(model, test_loader)
 
     # report metrics
-    clf_report = classification_report(y_test, np.round(predictions), target_names=["Animate", "Inanimate"])
+    clf_report= classification_report(y_test, np.round(predictions), target_names=["Animate", "Inanimate"])
+    accuracy = (y_test == np.round(predictions)).sum() / len(y_test)
 
     # save metrics
     with open(sub_mdl_path / "classification_report.txt", "w") as f:
+        f.write(f"Batch size: {args.batch_size}\n")
+        f.write(f"Learning rate: {args.lr}\n")
+        f.write(f"Epochs: {args.epochs}\n")
+        f.write(f"Subject: {args.sub}\n")
+
+        f.write(f"Accuracy: {accuracy}\n\n")
         f.write(clf_report)
 
 if __name__ == "__main__":
