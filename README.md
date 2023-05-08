@@ -33,3 +33,11 @@ python src/cnntorch.py
 
 
 ## Results
+A convolutional neural network was trained for each subject. 
+
+In the original paper by Grootswagers et al. (2019), the animacy was decoded using linear discriminant analysis within subjects. For each timepoint a classifer was trained. The mean accuracy across subjects nearly reached 56% (chance level is 50%) at approximately 400 ms after stimulus onset.
+
+
+
+## References
+*The representational dynamics of visual objects in rapid serial visual processing streams* Grootswagers, Robinson, Carlson (2019)
