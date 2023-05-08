@@ -43,7 +43,7 @@ def main():
     model = CNN(model, optimizer, criterion, lr = args.lr)
 
     # train model
-    history = CNN.train_model(train_loader, val_loader, epochs=args.epochs)
+    history = model.train_model(train_loader, val_loader, epochs=args.epochs)
 
     # subject output path
     sub_mdl_path = path.parents[1] / "mdl" / args.sub 
@@ -53,13 +53,13 @@ def main():
         sub_mdl_path.mkdir()
 
     # save model
-    torch.save(CNN.state_dict(), sub_mdl_path / "gaf_model.pt")
+    torch.save(model.state_dict(), sub_mdl_path / "gaf_model.pt")
 
     # plot losses and accuracies
     plot_history(history, save_path= sub_mdl_path / "history.png")
 
     # test model
-    predictions = CNN.predict(test_loader)
+    predictions = model.predict(test_loader)
 
     # report metrics
     clf_report = classification_report(y_test, np.round(predictions), target_names=["Animate", "Inanimate"])
