@@ -2,12 +2,13 @@ import numpy as np
 from pathlib import Path
 import argparse
 import torch
+import multiprocessing as mp
 
 # sklearn tools
 from sklearn.metrics import classification_report
 
 # local imports 
-from cnn_funcs import prep_data, prep_model, train_model, plot_history, predict
+from cnn_funcs import load_gafs, prep_dataloaders, prep_model, train_model, plot_history, predict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a CNN on GAFs')
@@ -31,8 +32,10 @@ def main():
         gaf_path = path.parents[1] / "data" / "gaf" / args.sub
         all = False
 
+    gafs, labels = load_gafs(gaf_path, n_jobs=mp.cpu_count(), all_subjects=all)
+
     # get dataloaders
-    train_loader, val_loader, test_loader, y_test = prep_data(gaf_path, args.batch_size, all=all)
+    train_loader, val_loader, test_loader, y_test = prep_dataloaders(gafs, labels, batch_size=args.batch_size)
 
     # prep model
     model, optimizer, criterion = prep_model(lr = args.lr)

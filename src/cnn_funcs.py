@@ -93,7 +93,6 @@ def load_gafs(gaf_path: Path, n_jobs: int = 1, all_subjects=False):
     return np.array(gafs), np.array(labels)
 
 
-
 class GAFDataset(Dataset):
     """Dataset class for GAF images, inherits from torch.utils.data.Dataset"""
 
@@ -108,7 +107,42 @@ class GAFDataset(Dataset):
         X = self.data[idx]
         y = self.labels[idx]
         return X, y
+ 
+def prep_dataloaders(gafs, labels, batch_size=4):
+    """
+    Creates dataloaders for training, validation, and testing
 
+    Parameters
+    ----------
+    gafs : np.array
+        The gaf images
+    labels : np.array
+        array of labels
+    batch_size : int, optional
+        Batch size, by default 4
+
+    Returns
+    -------
+    train_loader : DataLoader
+        Training data loader
+    val_loader : DataLoader
+        Validation data loader
+    test_loader : DataLoader
+        Testing data loader
+    y_test : np.array
+        Labels for the test set
+    """
+
+    # split into train, validation, and test sets
+    X_train, X_test, y_train, y_test = train_test_split(gafs, labels, test_size=0.2, random_state=7)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.3, random_state=7)
+
+    # create dataloaders
+    train_loader = DataLoader(GAFDataset(X_train, y_train), batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(GAFDataset(X_val, y_val), batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(GAFDataset(X_test, y_test), batch_size=batch_size, shuffle=False)
+
+    return train_loader, val_loader, test_loader, y_test
 
 def prep_model(lr: float):
     """
@@ -198,7 +232,6 @@ def train(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn, trai
     train_acc /= len(train_loader)
 
     return train_loss, train_acc
-
 
 def validate(model:torch.nn.Module, criterion:torch.nn, val_loader:DataLoader): 
     model.eval()
@@ -292,17 +325,3 @@ def plot_history(history, save_path = None):
     if save_path:
         plt.savefig(save_path)
 
- 
-def prep_data(gaf_path, batch_size, all=False):
-    gafs, labels = load_gafs(gaf_path, n_jobs=mp.cpu_count(), all_subjects=all)
-
-    # split into train, validation, and test sets
-    X_train, X_test, y_train, y_test = train_test_split(gafs, labels, test_size=0.2, random_state=7)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.3, random_state=7)
-
-    # create dataloaders
-    train_loader = DataLoader(GAFDataset(X_train, y_train), batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(GAFDataset(X_val, y_val), batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(GAFDataset(X_test, y_test), batch_size=batch_size, shuffle=False)
-
-    return train_loader, val_loader, test_loader, y_test
