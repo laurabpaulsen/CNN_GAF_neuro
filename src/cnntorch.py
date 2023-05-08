@@ -15,6 +15,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 
+import random
 
 # set parameters for plots
 plt.rcParams['font.family'] = 'serif'
@@ -31,9 +32,9 @@ plt.rcParams['figure.dpi'] = 300
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a CNN on GAFs')
-    parser.add_argument('--epochs', type=int, default=20, help='Number of epochs to train for')
-    parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
-    parser.add_argument('--lr', type=float, default=0.01, help='Learning rate')
+    parser.add_argument('--epochs', type=int, default=10, help='Number of epochs to train for')
+    parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
+    parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
     parser.add_argument('--sub', type=str, default='sub-01')
 
     return parser.parse_args()
@@ -74,7 +75,7 @@ def load_gaf(file: Path):
     
     return gaf, int(label)
 
-def load_gafs(gaf_path: Path, n_jobs: int = 1):
+def load_gafs(gaf_path: Path, n_jobs: int = 1, all_subjects=False):
     """
     Loads gaf images from path and return them as a numpy array using multiprocessing
     """
@@ -82,6 +83,11 @@ def load_gafs(gaf_path: Path, n_jobs: int = 1):
     labels = []
     
     files = list(gaf_path.iterdir())
+    
+    if all_subjects:
+        files = [list(dir.iterdir()) for dir in files]
+        files = [item for sublist in files for item in sublist]
+        files = random.choices(files, k=5000)
 
     if n_jobs > 1:
         with mp.Pool(n_jobs) as pool:
@@ -237,30 +243,34 @@ def predict(model, test_loader):
     return np.concatenate(y_pred)
 
  
-def prep_data(gaf_path, batch_size):
-    gafs, labels = load_gafs(gaf_path, n_jobs=mp.cpu_count())
+def prep_data(gaf_path, batch_size, all=False):
+    gafs, labels = load_gafs(gaf_path, n_jobs=mp.cpu_count(), all_subjects=all)
 
     # split into train, validation, and test sets
-    X_train, X_test, y_train, y_test = train_test_split(gafs, labels, test_size=0.2, random_state=42)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.4, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(gafs, labels, test_size=0.2, random_state=7)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.3, random_state=7)
 
     # create dataloaders
     train_loader = DataLoader(GAFDataset(X_train, y_train), batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(GAFDataset(X_val, y_val), batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(GAFDataset(X_test, y_test), batch_size=batch_size)
+    test_loader = DataLoader(GAFDataset(X_test, y_test), batch_size=batch_size, shuffle=False)
 
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader, test_loader, y_test
 
 def main():
     args = parse_args()
-
     path = Path(__file__)
 
     # load in data
-    gaf_path = path.parents[1] / "data" / "gaf" / args.sub
+    if args.sub == 'all':
+        gaf_path = path.parents[1] / "data" / "gaf"
+        all = True
+    else:
+        gaf_path = path.parents[1] / "data" / "gaf" / args.sub
+        all = False
 
     # get dataloaders
-    train_loader, val_loader, test_loader = prep_data(gaf_path, args.batch_size)
+    train_loader, val_loader, test_loader, y_test = prep_data(gaf_path, args.batch_size, all=all)
 
     # prep model
     model, optimizer, criterion = prep_model(lr = args.lr)
@@ -285,7 +295,7 @@ def main():
     predictions = predict(model, test_loader)
 
     # report metrics
-    clf_report = classification_report(test_loader.labels, np.round(predictions), target_names=["Animate", "Inanimate"])
+    clf_report = classification_report(y_test, np.round(predictions), target_names=["Animate", "Inanimate"])
 
     # save metrics
     with open(sub_mdl_path / "classification_report.txt", "w") as f:
