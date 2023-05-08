@@ -1,0 +1,8 @@
+              precision    recall  f1-score   support
+
+     Animate       0.53      0.61      0.57       641
+   Inanimate       0.55      0.46      0.50       650
+
+    accuracy                           0.54      1291
+   macro avg       0.54      0.54      0.53      1291
+weighted avg       0.54      0.54      0.53      1291
