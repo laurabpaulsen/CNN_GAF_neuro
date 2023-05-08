@@ -6,9 +6,6 @@
 import numpy as np
 from pyts.image import GramianAngularField, MarkovTransitionField
 from pathlib import Path
-from tqdm import tqdm
-import pandas as pd
-
 import multiprocessing as mp
 
 def trial_to_gaf(X:np.ndarray, image_size = 50):
