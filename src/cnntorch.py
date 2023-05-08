@@ -1,6 +1,7 @@
 import numpy as np
 from pathlib import Path
 import argparse
+import torch
 
 # sklearn tools
 from sklearn.metrics import classification_report
