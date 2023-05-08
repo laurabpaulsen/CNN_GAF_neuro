@@ -27,7 +27,6 @@ plt.rcParams['figure.titlesize'] = 16
 plt.rcParams['figure.dpi'] = 300
 
 
-
 def load_gaf(file: Path):
     """
     Load a gaf image from path and return it as a numpy array
@@ -144,6 +143,130 @@ def prep_dataloaders(gafs, labels, batch_size=4):
 
     return train_loader, val_loader, test_loader, y_test
 
+
+# define a class for the CNN
+class CNN():
+    # initialize the class
+    def __init__(self, model, optimizer, criterion, lr = 0.001):
+        self.lr = lr
+        self.model = model
+        self.optimizer = optimizer
+        self.criterion = criterion
+    
+    # train the model for one epoch
+    def train(self, train_loader:DataLoader):
+        """
+        Train the model for one epoch and return the loss and accuracy
+
+        Parameters
+        ----------
+        train_loader : DataLoader
+            The training data loader
+        
+        Returns
+        -------
+        train_loss : float
+            The training loss
+        train_acc : float
+            The training accuracy
+        """
+        self.model.train()
+        train_loss, train_acc = 0.0, 0.0
+        
+        for X, y in train_loader:
+            self.optimizer.zero_grad()
+            y_hat = self.model(X.float())
+            loss = self.criterion(y_hat.view(-1), y.float())
+            loss.backward()
+            self.optimizer.step()
+            train_loss += loss.item()
+            train_acc += ((torch.round(torch.sigmoid(y_hat.view(-1)))==y).sum().item() / len(y))
+
+        train_loss /= len(train_loader)
+        train_acc /= len(train_loader)
+
+        return train_loss, train_acc
+    
+    # train the model for X epochs
+    def train_model(self, train_loader:DataLoader, val_loader:DataLoader, epochs: int):
+        """Train the model and return the losses and accuracies
+        
+        Parameters
+        ----------
+        train_loader : DataLoader
+            The training data loader
+        val_loader : DataLoader
+            The validation data loader
+        epochs : int
+            The number of epochs to train for
+        
+        Returns
+        -------
+        history : dict
+            Dictionary with the train and validation loss and accuracies. 
+        """
+
+        # dict for storing losses and accuracies
+        history = {
+            'train_loss': [],
+            'val_loss': [],
+            'train_acc': [],
+            'val_acc': []
+        }
+
+        for epoch in range(epochs):
+            # train
+            train_loss, train_acc = self.train(self.model, self.optimizer, self.criterion, train_loader)
+            history['train_loss'].append(train_loss)
+            history['train_acc'].append(train_acc)
+            
+            # validate
+            val_loss, val_acc = self.validate(self.model, self.criterion, val_loader)
+            history['val_loss'].append(val_loss)
+            history['val_acc'].append(val_acc)
+
+            print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, train acc: {train_acc:.4f}, val loss: {val_loss:.4f}, val acc: {val_acc:.4f}")
+
+        return history
+    
+    def validate(self, val_loader:DataLoader): 
+        self.model.eval()
+        val_loss, val_acc = 0.0, 0.0
+        with torch.no_grad():
+            for X, y in val_loader:
+                y_hat = self.model(X.float())
+                loss = self.criterion(y_hat.view(-1), y.float())
+                val_loss += loss.item()
+                val_acc += ((torch.round(torch.sigmoid(y_hat.view(-1)))==y).sum().item() / len(y))
+
+            val_loss /= len(val_loader)
+            val_acc /= len(val_loader)
+
+        return val_loss, val_acc
+    
+
+    def predict(model, test_loader):
+        model.eval()
+        y_pred = []
+        with torch.no_grad():
+            for X, y in test_loader:
+                y_hat = model(X.float())
+                y_pred.append(torch.sigmoid(y_hat).numpy())
+
+        return np.concatenate(y_pred)
+    
+    def state_dict(self):
+        return self.model.state_dict()
+
+
+
+    
+
+
+
+
+
+
 def prep_model(lr: float):
     """
     Initialize CNN, optimizer, and loss function
@@ -194,116 +317,8 @@ def prep_model(lr: float):
 
     return model, optimizer, criterion
 
-def train(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn, train_loader:DataLoader):
-    """
-    Train the model for one epoch and return the loss and accuracy
 
-    Parameters
-    ----------
-    model : torch.nn.Module
-        The model to train
-    optimizer : torch.optim
-        The optimizer to use
-    criterion : torch.nn 
-        The loss function to use
-    train_loader : DataLoader
-        The training data loader
-    
-    Returns
-    -------
-    train_loss : float
-        The training loss
-    train_acc : float
-        The training accuracy
-    """
-    model.train()
-    train_loss, train_acc = 0.0, 0.0
-    
-    for X, y in train_loader:
-        optimizer.zero_grad()
-        y_hat = model(X.float())
-        loss = criterion(y_hat.view(-1), y.float())
-        loss.backward()
-        optimizer.step()
-        train_loss += loss.item()
-        train_acc += ((torch.round(torch.sigmoid(y_hat.view(-1)))==y).sum().item() / len(y))
 
-    train_loss /= len(train_loader)
-    train_acc /= len(train_loader)
-
-    return train_loss, train_acc
-
-def validate(model:torch.nn.Module, criterion:torch.nn, val_loader:DataLoader): 
-    model.eval()
-    val_loss, val_acc = 0.0, 0.0
-    with torch.no_grad():
-        for X, y in val_loader:
-            y_hat = model(X.float())
-            loss = criterion(y_hat.view(-1), y.float())
-            val_loss += loss.item()
-            val_acc += ((torch.round(torch.sigmoid(y_hat.view(-1)))==y).sum().item() / len(y))
-
-        val_loss /= len(val_loader)
-        val_acc /= len(val_loader)
-
-    return val_loss, val_acc
-
-def predict(model, test_loader):
-    model.eval()
-    y_pred = []
-    with torch.no_grad():
-        for X, y in test_loader:
-            y_hat = model(X.float())
-            y_pred.append(torch.sigmoid(y_hat).numpy())
-
-    return np.concatenate(y_pred)
-
-def train_model(model:torch.nn.Module, optimizer:torch.optim, criterion:torch.nn, train_loader:DataLoader, val_loader:DataLoader, epochs: int):
-    """Train the model and return the losses and accuracies
-    
-    Parameters
-    ----------
-    model : torch.nn.Module
-        The model to train
-    optimizer : torch.optim
-        The optimizer to use
-    criterion : torch.nn
-        The loss function to use
-    train_loader : DataLoader
-        The training data loader
-    val_loader : DataLoader
-        The validation data loader
-    epochs : int
-        The number of epochs to train for
-    
-    Returns
-    -------
-    history : dict
-        Dictionary with the train and validation loss and accuracies. 
-    """
-
-    # dict for storing losses and accuracies
-    history = {
-        'train_loss': [],
-        'val_loss': [],
-        'train_acc': [],
-        'val_acc': []
-    }
-
-    for epoch in range(epochs):
-        # train
-        train_loss, train_acc = train(model, optimizer, criterion, train_loader)
-        history['train_loss'].append(train_loss)
-        history['train_acc'].append(train_acc)
-        
-        # validate
-        val_loss, val_acc = validate(model, criterion, val_loader)
-        history['val_loss'].append(val_loss)
-        history['val_acc'].append(val_acc)
-
-        print(f"Epoch {epoch+1}/{epochs}, train loss: {train_loss:.4f}, train acc: {train_acc:.4f}, val loss: {val_loss:.4f}, val acc: {val_acc:.4f}")
-
-    return history
 
 
 def plot_history(history, save_path = None):

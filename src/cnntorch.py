@@ -8,7 +8,7 @@ import multiprocessing as mp
 from sklearn.metrics import classification_report
 
 # local imports 
-from cnn_funcs import load_gafs, prep_dataloaders, prep_model, train_model, plot_history, predict
+from cnn_funcs import load_gafs, prep_dataloaders, prep_model, plot_history, CNN
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a CNN on GAFs')
@@ -18,7 +18,6 @@ def parse_args():
     parser.add_argument('--sub', type=str, default='sub-01')
 
     return parser.parse_args()
-
 
 def main():
     args = parse_args()
@@ -40,8 +39,11 @@ def main():
     # prep model
     model, optimizer, criterion = prep_model(lr = args.lr)
 
+    # initialize class
+    model = CNN(model, optimizer, criterion, lr = args.lr)
+
     # train model
-    history = train_model(model, optimizer, criterion, train_loader, val_loader, epochs=args.epochs)
+    history = CNN.train_model(train_loader, val_loader, epochs=args.epochs)
 
     # subject output path
     sub_mdl_path = path.parents[1] / "mdl" / args.sub 
@@ -51,16 +53,16 @@ def main():
         sub_mdl_path.mkdir()
 
     # save model
-    torch.save(model.state_dict(), sub_mdl_path / "gaf_model.pt")
+    torch.save(CNN.state_dict(), sub_mdl_path / "gaf_model.pt")
 
     # plot losses and accuracies
     plot_history(history, save_path= sub_mdl_path / "history.png")
 
     # test model
-    predictions = predict(model, test_loader)
+    predictions = CNN.predict(test_loader)
 
     # report metrics
-    clf_report= classification_report(y_test, np.round(predictions), target_names=["Animate", "Inanimate"])
+    clf_report = classification_report(y_test, np.round(predictions), target_names=["Animate", "Inanimate"])
     accuracy = (y_test == np.round(predictions)).sum() / len(y_test)
 
     # save metrics
