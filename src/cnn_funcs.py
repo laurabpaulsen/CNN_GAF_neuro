@@ -216,12 +216,12 @@ class CNN():
 
         for epoch in range(epochs):
             # train
-            train_loss, train_acc = self.train(self.model, self.optimizer, self.criterion, train_loader)
+            train_loss, train_acc = self.train(train_loader)
             history['train_loss'].append(train_loss)
             history['train_acc'].append(train_acc)
             
             # validate
-            val_loss, val_acc = self.validate(self.model, self.criterion, val_loader)
+            val_loss, val_acc = self.validate(val_loader)
             history['val_loss'].append(val_loss)
             history['val_acc'].append(val_acc)
 
@@ -245,12 +245,12 @@ class CNN():
         return val_loss, val_acc
     
 
-    def predict(model, test_loader):
-        model.eval()
+    def predict(self, test_loader):
+        self.model.eval()
         y_pred = []
         with torch.no_grad():
             for X, y in test_loader:
-                y_hat = model(X.float())
+                y_hat = self.model(X.float())
                 y_pred.append(torch.sigmoid(y_hat).numpy())
 
         return np.concatenate(y_pred)
