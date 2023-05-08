@@ -1,8 +1,14 @@
+Batch size: 4
+Learning rate: 0.001
+Epochs: 8
+Subject: sub-15
+Accuracy: 762.0407358738502
+
               precision    recall  f1-score   support
 
-     Animate       0.59      0.49      0.53       765
-   Inanimate       0.56      0.65      0.60       757
+     Animate       0.57      0.72      0.64       765
+   Inanimate       0.62      0.46      0.53       757
 
-    accuracy                           0.57      1522
-   macro avg       0.57      0.57      0.57      1522
-weighted avg       0.57      0.57      0.57      1522
+    accuracy                           0.59      1522
+   macro avg       0.59      0.59      0.58      1522
+weighted avg       0.59      0.59      0.58      1522

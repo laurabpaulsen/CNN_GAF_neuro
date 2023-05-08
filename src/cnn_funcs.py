@@ -2,6 +2,7 @@ from pathlib import Path
 import numpy as np
 from tqdm import tqdm
 import multiprocessing as mp
+import random
 
 import matplotlib.pyplot as plt
 
@@ -70,14 +71,15 @@ def load_gafs(gaf_path: Path, n_jobs: int = 1, all_subjects=False):
     """
     gafs = []
     labels = []
-    
+
     files = list(gaf_path.iterdir())
-    
+
     if all_subjects:
         files = [list(dir.iterdir()) for dir in files]
         files = [item for sublist in files for item in sublist]
-        #files = random.choices(files, k=5000)
+        files = random.choices(files, k=10000) # choosing 50000 random trials to avoid memory overload
 
+    
     if n_jobs > 1:
         with mp.Pool(n_jobs) as pool:
             for gaf, label in tqdm(pool.imap(load_gaf, files), total=len(files), desc="Loading in data"):
@@ -257,14 +259,6 @@ class CNN():
     
     def state_dict(self):
         return self.model.state_dict()
-
-
-
-    
-
-
-
-
 
 
 def prep_model(lr: float):
