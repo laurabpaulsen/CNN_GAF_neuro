@@ -26,7 +26,7 @@ python src/timeseries2gaf.py
 ```
 5. Train and test the convolutional neural network
 ```
-python src/cnn.py
+python src/cnntorch.py
 ```
 
 ## Repository structure
