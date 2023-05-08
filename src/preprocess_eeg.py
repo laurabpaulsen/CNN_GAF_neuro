@@ -1,5 +1,5 @@
 """
-NOTES: Only one file we are interested in per subject.... maybe change preprocess subject????
+
 """
 
 import mne
@@ -57,7 +57,7 @@ def preprocess_eeg(raw, events):
     raw.filter(l_freq = 1, h_freq = 40, verbose=False)
 
     # epoch data
-    epochs = mne.Epochs(raw, events, tmin=0, tmax=0.2, proj=True, picks=picks, baseline=None, preload=True, verbose=False, reject ={'eeg': 150e-6})
+    epochs = mne.Epochs(raw, events, tmin=0, tmax=0.5, proj=True, picks=picks, baseline=None, preload=True, verbose=False, reject ={'eeg': 150e-6})
     return epochs
 
 def preprocess_subject(sub_path:Path):
