@@ -13,9 +13,10 @@ def get_all_accuracies(clf_reports):
     return [get_accuracy(clf_report) for clf_report in clf_reports]
 
 def load_clf_reports(mdl_path):
-
-    # find all the classification reports
-    clf_reports = list(mdl_path.glob('**/classification_report.txt'))
+    clf_reports = []
+    for sub_dir in mdl_path.iterdir():
+        clf_report = mdl_path / sub_dir / 'classification_report.txt'
+        clf_reports.append(clf_report)
 
     # load the classification reports
     clf_reports = [open(clf_report, 'r').read() for clf_report in clf_reports]
