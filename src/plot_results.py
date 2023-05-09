@@ -31,7 +31,7 @@ def load_clf_reports(mdl_path):
     for sub_dir in mdl_path.iterdir():
         clf_report = mdl_path / sub_dir / 'classification_report.txt'
         clf_reports.append(clf_report)
-        subjects.append(sub_dir)
+        subjects.append(sub_dir.name)
 
     # load the classification reports
     clf_reports = [open(clf_report, 'r').read() for clf_report in clf_reports]
@@ -39,8 +39,9 @@ def load_clf_reports(mdl_path):
     return clf_reports, subjects
 
 def plot_accuracies(accuracies, subjects, save_path=None):
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    print(accuracies)
+    print(subjects)
     ax.bar(subjects, accuracies)
     ax.set_ylabel('Accuracy')
     ax.set_xlabel('Subject')
@@ -59,7 +60,7 @@ def plot_accuracies(accuracies, subjects, save_path=None):
 def main():
     path = Path(__file__)
     mdl_path = path.parents[1] / 'mdl'
-    fig_path = path.parents[1] / 'figs'
+    fig_path = path.parents[1] / 'fig'
 
     # load the classification reports
     clf_reports, subjects = load_clf_reports(mdl_path)
