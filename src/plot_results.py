@@ -41,18 +41,19 @@ def load_clf_reports(mdl_path):
 def plot_accuracies(accuracies, subjects, save_path=None):
     fig, ax = plt.subplots(1, 1, figsize=(8, 6))
 
-    # sort by subject
-    accuracies = [acc for _, acc in sorted(zip(subjects, accuracies))]
+    # sort by subject and turn to percent
+    accuracies = [acc*100 for _, acc in sorted(zip(subjects, accuracies))]
     subjects = sorted(subjects)
     
-    ax.bar(subjects, accuracies)
-    ax.set_ylabel('Accuracy')
+    ax.bar(subjects, accuracies, color = "#82AC85")
+    ax.set_ylabel('Accuracy (%)')
 
     # y limits
-    ax.set_ylim([0.3, 1])
+    ax.set_ylim([min(accuracies) - 3, max(accuracies)+3])
 
     # plot mean accuracy
     ax.axhline(np.mean(accuracies), color='k', linestyle='--', label='Mean Accuracy')
+    ax.axhline(50, color='k', label='Chance Level')
     ax.legend()
 
     # turn x labels 45 degrees
