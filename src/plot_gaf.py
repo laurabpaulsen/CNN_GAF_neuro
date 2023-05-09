@@ -63,5 +63,9 @@ if __name__ in "__main__":
     path = Path(__file__).parents[1]
 
     gaf_path = path / "data" / "gaf" / "sub-01" / "trial_0_label_0.npy"
-    plot_path = path / "fig" / "gaf_sub-01_0_0.png"
-    main_plotter(gaf_path, save_path=plot_path)
+    plot_path = path / "fig"
+
+    if not plot_path.exists():
+        plot_path.mkdir()
+
+    main_plotter(gaf_path, save_path=plot_path / "gaf_sub-01_0_0.png")
