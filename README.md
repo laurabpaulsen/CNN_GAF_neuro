@@ -9,7 +9,7 @@ The data is converted into 50 x 50 x 3 x 63 numpy arrays which are fed to the CN
 
 Below is an illustration of the layers of the data fed to the CNN model. The first row shows the GAFS, the second row is the GAFD, and the third row is the Markow transitional field. Only representations of the first 10 timeseries are shown, but for each trial 63 timeseries are included (one for each sensor). The GAFS and GAFD contain values between -1 and 1, while the Markow transitional field contains values between 0 and 1.
 
-![gaf_example](data/gaf_sub-01_0_0.png)
+![gaf_example](fig/gaf_sub-01_0_0.png)
 
 
 ## Usage and reproduciblity
