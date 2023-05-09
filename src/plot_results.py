@@ -40,8 +40,11 @@ def load_clf_reports(mdl_path):
 
 def plot_accuracies(accuracies, subjects, save_path=None):
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-    print(accuracies)
-    print(subjects)
+
+    # sort by subject
+    accuracies = [acc for _, acc in sorted(zip(subjects, accuracies))]
+    subjects = sorted(subjects)
+    
     ax.bar(subjects, accuracies)
     ax.set_ylabel('Accuracy')
     ax.set_xlabel('Subject')
