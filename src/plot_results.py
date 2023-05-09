@@ -47,8 +47,9 @@ def plot_accuracies(accuracies, subjects, save_path=None):
     
     ax.bar(subjects, accuracies)
     ax.set_ylabel('Accuracy')
-    ax.set_xlabel('Subject')
-    ax.set_title('Classification Accuracy')
+
+    # y limits
+    ax.set_ylim([0.3, 1])
 
     # plot mean accuracy
     ax.axhline(np.mean(accuracies), color='k', linestyle='--', label='Mean Accuracy')
