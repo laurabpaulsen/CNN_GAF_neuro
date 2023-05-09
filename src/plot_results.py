@@ -70,6 +70,9 @@ def main():
     mdl_path = path.parents[1] / 'mdl'
     fig_path = path.parents[1] / 'fig'
 
+    if not fig_path.exists():
+        fig_path.mkdir()
+
     # load the classification reports
     clf_reports, subjects = load_clf_reports(mdl_path)
 
