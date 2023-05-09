@@ -18,17 +18,9 @@ Below is an illustration of the layers of the data fed to the CNN model. The fir
 ```
 bash setup.sh
 ```
-3. Preprocess the EEG data
+3. Run preprocessing, GAF and Markow transitional field conversion, and CNN training and testing
 ```
-python src/preprocess_eeg.py
-```
-4. Get the gramian angular fields (both GAFD and GAFS) and Markow transitional fields for timeseries EEG data
-```
-python src/timeseries2gaf.py
-```
-5. Train and test the convolutional neural network
-```
-python src/cnntorch.py
+bash run.sh
 ```
 
 ## Repository structure
@@ -38,6 +30,7 @@ python src/cnntorch.py
 │   ├── preprocessed
 │   └── gaf
 ├── env
+├── fig
 ├── mdl
 │   ├── sub-01
 │   ├── sub-02
@@ -60,6 +53,14 @@ A convolutional neural network was trained for each subject.
 
 In the original paper by Grootswagers et al. (2019), the animacy was decoded using linear discriminant analysis within subjects. For each timepoint a classifer was trained. The mean accuracy across subjects nearly reached 56% (chance level is 50%) at approximately 400 ms after stimulus onset. 
 
+As seen in the plot below the results of the CNN models implemented in this repository varies across participants. The number of epochs and other parameters were chosen based on running the model on subject 1. It cannot be ruled out that other parameters could improve accuracies for other participants. 
+
+![accuracy](fig/accuracies.png)
+
+If we for example take a look at the validation accuracy curve for sub-13, it suggests that stopping the training after the 6th epoch might improve the accuracy.
+![sub-13](mdl/sub-13/history.png)
+
+Implementing grid search to find the optimal parameters for each subject could improve the results. However, this would be computationally expensive and time consuming.
 
 
 ## References
