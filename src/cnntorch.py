@@ -70,9 +70,8 @@ def main():
         f.write(f"Batch size: {args.batch_size}\n")
         f.write(f"Learning rate: {args.lr}\n")
         f.write(f"Epochs: {args.epochs}\n")
-        f.write(f"Subject: {args.sub}\n")
+        f.write(f"Subject: {args.sub}\n\n")
 
-        f.write(f"Accuracy: {accuracy}\n\n")
         f.write(clf_report)
 
 if __name__ == "__main__":
