@@ -1,5 +1,5 @@
 # CNN classification of object category from EEG timeseries data transformed to images
-This repository holds the code for the final project for Visual Analytics (S2023). This includes preprocessing of EEG data, converting the timeseries from the sensors to gramian angular fields (both GAFS and GAFD) and Markow transitional fields, and training and testing a 3D convolutional neural network on the data.
+This repository holds the code for the final project for Visual Analytics (S2023). This includes preprocessing of EEG data, converting the timeseries from the sensors to gramian angular & Markow transitional fields, and the training and testing a 3D convolutional neural network on the data.
 
 ## Motivation for using CNNs on EEG data
 Using machine-learning model on timeseries data such as EEG data can be challenging, as it is often high-dimensional and the temporal structure is not easily captured by the model. One way to overcome this is to transform the timeseries data into images representing temporal correlation between each pair of timeseries, which can be fed to a convolutional neural network (CNN). 
