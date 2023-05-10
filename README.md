@@ -1,6 +1,8 @@
 # CNN classification of object category from EEG timeseries data transformed to images
 This repository holds the code for the final project for Visual Analytics (S2023). This includes preprocessing of EEG data, converting the timeseries from the sensors to gramian angular fields (both GAFS and GAFD) and Markow transitional fields, and training and testing a 3D convolutional neural network on the data.
 
+## Motivation for using CNNs on EEG data
+Using machine-learning model on timeseries data such as EEG data can be challenging, as it is often high-dimensional and the temporal structure is not easily captured by the model. One way to overcome this is to transform the timeseries data into images representing temporal correlation between each pair of timeseries, which can be fed to a convolutional neural network (CNN). 
 
 ## Description of the data
 For this project, open-sourced EEG data from openneuro.org was used. The data consists of EEG data from 16 subjects. Each subject particpated in two experiments, where only the first was used for the current analysis. Participants were presented with a stream of images at 5 Hz. The stimuli consisted of 200 different images, which can be grouped into animate and inanimate stimuli. More information about the data can be found [here](https://openneuro.org/datasets/ds004018/versions/2.0.0).
@@ -10,7 +12,6 @@ The data is converted into 50 x 50 x 3 x 63 numpy arrays which are fed to the CN
 Below is an illustration of the layers of the data fed to the CNN model. The first row shows the GAFS, the second row is the GAFD, and the third row is the Markow transitional field. Only representations of the first 10 timeseries are shown, but for each trial 63 timeseries are included (one for each sensor). The GAFS and GAFD contain values between -1 and 1, while the Markow transitional field contains values between 0 and 1.
 
 ![gaf_example](fig/gaf_sub-01_0_0.png)
-
 
 ## Usage and reproduciblity
 1. Download the data following the instructions in the `readme.md` in the `data` directory. 
@@ -39,6 +40,7 @@ bash run.sh
 │   ├── cnn_funcs.py
 │   ├── cnntorch.py
 │   ├── plot_gaf.py
+│   ├── plot_results.py
 │   ├── preprocess_eeg.py
 │   └── timeseries2gaf.py
 ├── README.md
@@ -49,19 +51,17 @@ bash run.sh
 
 
 ## Results
-A convolutional neural network was trained for each subject. 
+In the original paper by Grootswagers et al. (2019) using the same data, the animacy was decoded using linear discriminant analysis within subjects. For each timepoint a classifer was trained. The mean accuracy across subjects nearly reached 56% (chance level is 50%) at approximately 400 ms after stimulus onset. 
 
-In the original paper by Grootswagers et al. (2019), the animacy was decoded using linear discriminant analysis within subjects. For each timepoint a classifer was trained. The mean accuracy across subjects nearly reached 56% (chance level is 50%) at approximately 400 ms after stimulus onset. 
-
-As seen in the plot below the results of the CNN models implemented in this repository varies across participants. The number of epochs and other parameters were chosen based on running the model on subject 1. It cannot be ruled out that other parameters could improve accuracies for other participants. 
+For the CNN model implemented in this repository, the mean accuracy did not exceed that of the original paper. As seen in the plot below a great variation in the accuracies across subjects is observed. The number of epochs, batch size and other parameters were chosen based on running the model on sub-01. It cannot be ruled out that other parameters would have been more optimal for other subjects.
 
 ![accuracy](fig/accuracies.png)
 
-If we for example take a look at the validation accuracy curve for sub-13, it suggests that stopping the training after the 6th epoch might improve the accuracy.
+The validation accuracy curves for each sub-13 are shown below (the subject with the lowest test accuracy). The plot suggest that the model is overfitting, as the validation accuracy plummets after the sixth epoch, while the training accuracy continues to increase. Training for fewer epochs might have improved the results for this subject.
 ![sub-13](mdl/sub-13/history.png)
 
 Implementing grid search to find the optimal parameters for each subject could improve the results. However, this would be computationally expensive and time consuming.
 
 
 ## References
-*The representational dynamics of visual objects in rapid serial visual processing streams* Grootswagers, Robinson, Carlson (2019)
+*The representational dynamics of visual objects in rapid serial visual processing streams* - Grootswagers, Robinson, Carlson (2019)
