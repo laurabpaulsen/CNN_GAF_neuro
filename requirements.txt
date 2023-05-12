@@ -1,7 +1,9 @@
-pyts
-mne
+matplotlib==3.7.1
+mne==1.4.0
+numpy==1.23.5
+pandas==2.0.1
+pyts==0.12.0
+scikit_learn==1.2.2
+torch==2.0.1
+tqdm==4.65.0
 dtcwt
-tensorflow-cpu
-numpy
-pandas
-torch
