@@ -1,4 +1,10 @@
 """
+This script preprocesses the EEG data for each subject. 
+    - Set the reference to common average
+    - Filters the data between 1 and 40 Hz.
+    - Splits the data into epochs of 500 ms.
+
+The epochs and the labels (animate or inanimate) for each trial are saved as .npy files. 
 
 """
 
@@ -112,7 +118,6 @@ def preprocess_subject(sub_path:Path):
 
     np.save(X_path, X)
     np.save(y_path, y)
-
 
 def main():
     path = Path(__file__)
