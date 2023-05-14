@@ -57,7 +57,7 @@ For the CNN model implemented in this repository, the mean accuracy did not exce
 
 ![accuracy](fig/accuracies.png)
 
-The validation accuracy curves for sub-13 are shown below (the subject with the lowest test accuracy). The plot suggest that the model is overfitting, as the validation accuracy plummets after the sixth epoch, while the training accuracy continues to increase. Training for fewer epochs might have improved the results for this subject.
+The validation accuracy curves for sub-13 are shown below (the subject with the lowest test accuracy). The plot suggest that the model is overfitting, as the validation accuracy plummets after the sixth epoch, while the training accuracy continues to increase. Training for fewer epochs might have improved the results for this subject. Additionally, the validation loss fluctuates wildly between epochs suggesting that the learning rate could be too high.
 ![sub-13](mdl/sub-13/history.png)
 
 Implementing grid search to find the optimal parameters for each subject could improve the results. However, this would be computationally expensive and time consuming.
