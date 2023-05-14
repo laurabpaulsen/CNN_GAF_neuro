@@ -64,4 +64,4 @@ Implementing grid search to find the optimal parameters for each subject could i
 
 
 ## References
-*The representational dynamics of visual objects in rapid serial visual processing streams* - Grootswagers, Robinson, Carlson (2019)
+Grootswagers et al (2019) - *The representational dynamics of visual objects in rapid serial visual processing streams*
