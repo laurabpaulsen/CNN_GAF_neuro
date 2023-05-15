@@ -23,7 +23,7 @@ bash setup.sh
 ```
 bash run.sh
 ```
-
+The pipeline was developed and tested on [uCloud](https://cloud.sdu.dk/app/dashboard) (Ubuntu v22.10m, Coder python v1.77.3, python v3.10.7).
 ## Repository structure
 ```
 ├── data
